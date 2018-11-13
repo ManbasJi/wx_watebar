@@ -9,7 +9,9 @@
   	 	color: transparent;
 	}
 	.top_box{
-		height:80rpx;
+		padding-left:30rpx;
+		height:90rpx;
+		border-bottom:1px solid #f2f2f2;
 	}
 	.top_tab{
 		height:80rpx;
@@ -39,37 +41,39 @@
 		z-index:888;
 		width:100%;
 		.pic_shopcart{
-			width:60rpx;
-			height:60rpx;
+			width:50rpx;
+			height:50rpx;
 			margin-top:15rpx;
 		}
 		.pic_shopcart_bg{
 			float:left;
-			width:90rpx;
+			width:180rpx;
 			height:90rpx;
-			border-radius:360rpx;
-			background:#ffeb3b;
+			background:#fff;
 			position:relative;
+			border-radius:50rpx;
 			text-align:center;
 			top:-20rpx;
-			left:30rpx;			
+			left:30rpx;
+			box-shadow:1px 1px 1px 1px #cdcdcd;	
 		}
 		.pic_shopcart_bg_null{
 			float:left;
-			width:90rpx;
+			width:180rpx;
 			height:90rpx;
-			border-radius:360rpx;
-			background:#cccccc;
+			border-radius:50rpx;
+			background:#fff;
 			position:relative;
 			text-align:center;
 			top:-20rpx;
-			left:30rpx;			
+			left:30rpx;
+			box-shadow:1px 1px 1px 1px #cdcdcd;				
 		}
 		.all_price{
 			position:relative;
-			font-size:48rpx;
-			color:#fff;
-			font-weight:normal;
+			font-size:44rpx;
+			color:#333;
+			font-weight:bold;
 			left:30rpx;
 			top:15rpx;
 		}
@@ -100,7 +104,7 @@
 			text-align:center;
 			font-size:20rpx;
 			color:#fff;
-			background:red;
+			background:#ffc400;
 			z-index:999;
 			position:relative;
 			top:-20rpx;
@@ -126,7 +130,7 @@
 		justify-content:flex-start;
 		align-items:center;
       background:#fafafa;
-	  font-size: 26rpx;
+	  font-size: 24rpx;
       color: #666; 
       height:80rpx;
       padding-left:20rpx;     
@@ -135,6 +139,7 @@
 	.active {
 		background:#fff;
 		color: #2c2c2c;
+		border-left:3px solid #ffc400;
 	}
 
 	.category_name{
@@ -408,20 +413,30 @@
 <template>
 	<!-- 顶部 -->
 	<view class="top_box">
-		<view class="top_tab textcolor1"><text>菜单</text></view>
+		<text style="font-size:32rpx;font-weight:bold;color:#000;">龙湖店</text>
+		<text style="font-size:24rpx;color:#666;border-radius:8rpx;border:1rpx solid #666;padding:3rpx;margin-left:20rpx;">可外送</text><view></view>
+		<text style="font-size:22rpx;color:#999;">联系电话:0754-88888888</text>
+		<text style="font-size:22rpx;color:#999;">龙湖区黄河路19号智汇时代雅苑4栋1601号</text>
 	</view>
+			<swiper indicator-dots="true" autoplay="true" interval="3000" duration="3000" style="padding:20rpx;">
+				<block wx:for="{{bannerList}}">
+			    <swiper-item style="border-radius:10rpx;">
+			      <image src="{{item}}" class="slide-image" width="700" height="150" style="width:100%;"/>
+			    </swiper-item>
+			  </block>	
+			</swiper>
 	<!-- 中间 -->
 	<view class="content_box" style="height:{{windowHeight-95}}px">
 		<!-- 左侧菜单 -->
 		<scroll-view class="category_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
 			<view class="name text_overflow {{item.active?'active':''}}" wx:for="{{categoryList}}" wx:key="item" @tap="onChangeCategory" data-id="{{item.fListId}}" data-index="{{index}}">
+				<image src="{{item.url}}" style="width:40rpx;height:40rpx;margin-right:10rpx;"></image>
 				<text>{{item.fListName}}</text>
-				<image src="{{item.url}}" style="width:40rpx;height:40rpx;margin-left:10rpx;"></image>
 			</view>
 		</scroll-view>
 		<!-- 右侧菜单 -->
 		<scroll-view class="food_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
-			<view class="category_name">{{categoryName}}</view>
+			<!-- <view class="category_name">{{categoryName}}</view> -->
 			<view class="food_list">
 				<view class="food_item" wx:for="{{foodMsgList}}" wx:for-item="item" wx:key="index" data-index="{{index}}" @tap="showM">
 					<image class="food_image" mode="aspectFill" src="{{item.fGoodsImg}}"></image>
@@ -449,7 +464,10 @@
 	</view>
 	<!-- 底部 -->
 	<view class="bottom_box">
-		<view class="{{allPrice==0||allPrice==undefined?'pic_shopcart_bg_null':'pic_shopcart_bg'}}"><image class="pic_shopcart" src="../images/icon_shop_cart.png"></image></view>
+		<view class="{{allPrice==0||allPrice==undefined?'pic_shopcart_bg_null':'pic_shopcart_bg'}}">
+			<image class="pic_shopcart" src="../images/icon_shop_cart.png"></image>
+			<text style="font-size:26rpx;margin-left:10rpx;">购物袋</text>
+		</view>
 		<view class="shopcart_num_redpoint" wx:if="{{allPrice==0||allPrice==undefined?false:true}}">{{allProNum}}</view>
 		<text class="all_price">{{allPrice==0||allPrice==undefined?'':'￥'+allPrice}}</text>
 <!-- 		<text class="distributionPrice">另需配送费{{shopInfo.fDistributionPrice}}元</text> -->
@@ -497,6 +515,11 @@ export default class foodMenuParce extends wepy.page{
 		shopId:'',
 		custId:0,
 		tableNo:null,
+		bannerList:[
+			'http://image.leadnexus.net/huangjing1.PNG',
+			'http://image.leadnexus.net/huangjing2.PNG',
+			'http://image.leadnexus.net/huangjing3.PNG',
+		],
 
 		iconUrl:[
 			'../images/nw_icon.png',

@@ -1,964 +1,1004 @@
-<template>
-	<view class="container">
-		<view class="top_box">
-	    <view wx:if="{{isAddressCover}}" class="address_cover">
-	    	<text class="address">{{address}}</text>
-    	</view>
-			<i class="iconfont icon-home-address" @tap="onAddresscover"></i>
-	    <view wx:if="{{isTimeCover}}" class="time_cover">
-	    	<text class="time">{{open_time}}</text>
-    	</view>
-			<i class="iconfont icon-home-time"  @tap="onTimecover"></i>
-<!-- 	    <view wx:if="{{isNoticeCover}}" class="notice_cover">
-	    	<text class="notice">{{notice}}</text>
-    	</view> -->
-			<i class="iconfont icon-phone" @tap="onCallPhone"></i>				
-			<image class="logo" src="{{shop_logo}}"></image>
-			<view class="shopName textsize1">{{shop_name}}</view>
-		</view>
-
-		<view class="middle_box">
-			<view class="dish_container">
-			<view class="s">
-			<i class="iconfont icon-subscribe" style="color:#259b24" @tap="onSubscribe"></i>
-			<view>预约</view>
-			</view>
-			<view class="d">
-			<i class="iconfont icon-diner" style="color:#ff3d00" @tap="onOrder"></i>
-			<view>点餐</view>
-			</view>
-			<view class="p">
-			<i class="iconfont icon-parce" style="color:#ffc400" @tap="onParce"></i>
-			<view>外卖</view>
-			</view>
-			<view class="l">
-			<i class="iconfont icon-list" style="color:#795548" @tap="onList"></i>
-			<view>排队</view>	
-			</view>						
-		</view>
-		</view>
-	</view>
-
-	<view class="modal-mask" catchtouchmove="preventTouchMove" wx:if="{{isShowModal}}" @tap="onTouchMask"></view>
-	<view class="coupon-list" wx:if="{{isShowModal}}">
-		<view style="width:100%;text-align:center;font-size:30rpx;"> —— 全品类满减优惠券 —— </view>
-		<scroll-view scroll-y="true" style="height:420rpx;">
-		<view class="container">
-    	<view class="coupons-list">
-    	<repeat for="{{couponDataList}}" key="index" index="index" item="item">
-      <view class="coupons-item" @tap="onToCommitOrder" data-id="{{item.fId}}">
-        <view class="money-left">{{item.fPrice}}<text>元</text></view>
-        <view class="money-right">
-          <view class="money-name">满减优惠券</view>
-          <view class="money-hold">满{{item.fAmount}}元使用</view>
-        </view>
-        <form data-item="{{item}}" bindsubmit="onCatchCoupon" report-submit="true">
-        	<button formType="submit" class="money-home">领取</button>
-        </form>
-        <view class="money-line"></view>
-        <view class="money-fooder">
-          有效期7天
-        </view>
-      </view>
-      </repeat>
-    </view>
-		</view>
-		</scroll-view>
-	</view>
-
-	<form bindsubmit="onCloseDialog" report-submit="true">
-		<image wx:if="{{isShowModal}}" src="../images/close_icon.png" class="closedialog-btn"></image>
-		<button wx:if="{{isShowModal}}" formType="submit" class="closedialog-btn">
-			.
-		</button>
-	</form>
-
-<view class="modal-mask" catchtouchmove="preventTouchMove" wx:if="{{isShowGetPmsModal}}" @tap="onTouchPmsMask"></view>
-	<view class="coupon-list" wx:if="{{isShowGetPmsModal}}">
-		<view style="height:420rpx;background:#fff;">
-			<image class="authorize-icon" src="../images/authorize.png"></image>
-			<view class="auth-item">申请获取以下权限：</view>
-			<view class="auth-item">获取你的公开信息（头像、昵称等）</view>
-			<view class="btn-authorize">
-				<button style="height:80rpx;line-height:80rpx;font-size:36rpx;" open-type="getUserInfo" type="primary" lang="zh_CN" bindgetuserinfo="onGotUserInfo">授权</button>
-			</view>
-		</view>
-	</view>
-</template>
-
 <style lang="less">
-	.address_cover{
-		background:#fff;
-		padding:8rpx 20rpx;
-		border-radius:30rpx;
-		font-size:28rpx;
-		color:#999;
-		position:absolute;
-		top:1vw;
-		left:16vw;
-		z-index:999;
-		opacity:0.9;
+	page{
+		background:#ffffff
 	}
-	.time_cover{
-		background:#fff;
-		padding:8rpx 20rpx;
-		border-radius:30rpx;
-		font-size:28rpx;
-		color:#999;
-		position:absolute;
-		top:13vw;
-		left:16vw;
-		z-index:999;
-		opacity:0.9;
+	//隐藏滚动条
+	::-webkit-scrollbar{
+ 	 	width: 0; 
+  	 	height: 0;
+  	 	color: transparent;
 	}
-	.notice_cover{
-		background:#fff;
-		padding:8rpx 20rpx;
-		border-radius:30rpx;
-		font-size:28rpx;
-		color:#999;
-		position:absolute;
-		top:25vw;
-		left:16vw;
-		z-index:999;
-		opacity:0.9;
-	}
-
-	.dish_container{
-		position:relative;
-		width:80%;
-		height:80vw;
-		background:#fff;
-		border-radius:360rpx;
-		margin-left:10%;
-		box-shadow: 5px 5px 1px #cdcdcd;
-		i{
-			font-size:80rpx;
-		}
-		.s{
-			position:absolute;
-			top:25%;
-			left:25%;
-			text-align:center;
-			view{
-				font-size:25rpx;
-				color:#999;
-			}
-		}
-		.d{
-			position:absolute;
-			top:25%;
-			right:25%;
-			text-align:center;
-			view{
-				font-size:25rpx;
-				color:#999;
-			}
-		}
-		.p{
-			position:absolute;
-			bottom:25%;
-			left:25%;
-			text-align:center;
-			view{
-				font-size:25rpx;
-				color:#999;
-			}
-		}
-		.l{
-			position:absolute;
-			bottom:25%;
-			right:25%;
-			text-align:center;
-			view{
-				font-size:25rpx;
-				color:#999;
-			}
-		}
-	}
-
 	.top_box{
-		position:relative;
-		width:100%;
-		height:500rpx;
-		text-align:center;
-		background:#413d3c;
-		margin-bottom:-200rpx;
-		.backg{
-			position:fixed;
-			left:0rpx;
-			top:0rpx;
-			bottom:0rpx;
-			height:500rpx;
-			width:100%;
-		}
-		.icon-home-address{
-			position:absolute;
-			font-size:60rpx;
-			color:#999;
-			left:3vw;
-		}
-		.icon-home-time{
-			position:absolute;
-			font-size:55rpx;
-			color:#999;
-			left:3vw;
-			top:12vw;
-		}
-		.icon-home-notice{
-			position:absolute;
-			font-size:55rpx;
-			color:#999;
-			left:3vw;
-			top:24vw;
-		}
-		.icon-phone{
-			position:absolute;
-			font-size:66rpx;
-			color:#999;
-			left:3vw;
-			top:24vw;
-		}
+		height:80rpx;
 	}
-	.logo{
-		position:absolute;
-		width:20vw;
-		height:20vw;
-		border-radius:360rpx;
-		top:5vw;
-		left:40vw;
-	}
-	.shopName{
-		position:absolute;
-		color:#fff;
-		width:30vw;
-		font-weight:500;
-		top:27vw;
-		left:50%;
-		margin-left:-15vw;
+	.top_tab{
+		height:80rpx;
+		line-height:80rpx;
+		padding-left:40rpx;
+		font-size:32rpx;
+		border: 2rpx solid #e0e0e0;
+  		border-right-width:0rpx;
+  		border-left-width:0rpx;
+  		border-bottom-color:#f2f2f2;
+  		font-weight:600;
+  		color:#666;
+  		text{
+  			text-align:center;
+  			display:block;
+  			height:70rpx;
+  			width:80rpx;
+  			border-bottom:4rpx solid #ffc400;
+  		}
 	}
 
-	.middle_box{
-		width:100%;
-		height:200rpx;
-		i{
-			position:relative;
-			z-index:9999;
-		}
-	}
-
-	.btn_subscribebox{
-		float:left;
-		height:150rpx;
-		width:20%;
-		text-align:center;
-		margin-left:7%;
-		image{
-			width:150rpx;
-			height:150rpx;
-		}
-		i{
-			position:relative;
-			bottom:110rpx;
-			font-size:50rpx;
-		}
-	}
-	.btn_orderbox{
-		float:left;
-		height:150rpx;
-		width:20%;
-		text-align:center;
-		margin-left:2%;
-		image{
-			width:150rpx;
-			height:150rpx;
-		}
-		i{
-			position:relative;
-			bottom:110rpx;
-			font-size:50rpx;
-		}
-	}
-	.btn_parcelbox{
-		float:left;
-		height:150rpx;
-		width:20%;
-		text-align:center;
-		margin-left:2%;
-		image{
-			width:150rpx;
-			height:150rpx;
-		}
-		i{
-			position:relative;
-			bottom:110rpx;
-			font-size:50rpx;
-		}
-	}
-	.btn_listbox{
-		float:left;
-		height:150rpx;
-		width:20%;
-		text-align:center;
-		margin-left:2%;
-		image{
-			width:150rpx;
-			height:150rpx;
-		}
-		i{
-			position:relative;
-			bottom:110rpx;
-			font-size:50rpx;
-		}
-	}
 	.bottom_box{
+		height:90rpx;
+		background:#eae6e7;
+		position:fixed;
+		bottom:0rpx;
+		z-index:888;
 		width:100%;
+		.pic_shopcart{
+			width:60rpx;
+			height:60rpx;
+			margin-top:15rpx;
+		}
+		.pic_shopcart_bg{
+			float:left;
+			width:90rpx;
+			height:90rpx;
+			border-radius:360rpx;
+			background:#ffeb3b;
+			position:relative;
+			text-align:center;
+			top:-20rpx;
+			left:30rpx;			
+		}
+		.pic_shopcart_bg_null{
+			float:left;
+			width:90rpx;
+			height:90rpx;
+			border-radius:360rpx;
+			background:#cccccc;
+			position:relative;
+			text-align:center;
+			top:-20rpx;
+			left:30rpx;			
+		}
+		.all_price{
+			position:relative;
+			font-size:48rpx;
+			color:#fff;
+			font-weight:normal;
+			left:30rpx;
+			top:15rpx;
+		}
+		.distributionPrice{
+			font-size:26rpx;
+			color:#ccc;
+			position:relative;
+			left:40rpx;
+			top:15rpx;
+		}
+		.btn_balance{
+			float:right;
+			background:#ffc400;
+			font-size:30rpx;
+			height:90rpx;
+			line-height:90rpx;
+			width:170rpx;
+			text-align:center;
+			font-weight:600;
+			color:#333;
+		}
+
+		.shopcart_num_redpoint{
+			float:left;
+			width:28rpx;
+			height:28rpx;
+			line-height:28rpx;
+			text-align:center;
+			font-size:20rpx;
+			color:#fff;
+			background:red;
+			z-index:999;
+			position:relative;
+			top:-20rpx;
+			left:15rpx;
+			border-radius:360rpx;
+		}
 	}
-	.opentime_box{
-		background:#ffffff;
-		width:86%;
-		height:80rpx;
-		line-height:80rpx;
-		border:0rpx solid #f2f2f2;
-		border-top-width:2rpx;
-		margin-left:7%;
-		margin-right:7%;
+
+	.content_box{
+		display:flex;
+		position: relative;
 	}
-	.contact_box{
-		background:#ffffff;
-		width:86%;
-		height:80rpx;
-		line-height:80rpx;
-		border:0rpx solid #f2f2f2;
-		border-top-width:2rpx;
-		margin-left:7%;
-		margin-right:7%;
+
+	.category_box{
+		width: 160rpx;
+		position:relative;
 	}
-	.address_box{
-		background:#ffffff;
-		width:86%;
-		height:80rpx;
-		line-height:80rpx;
-		border:0rpx solid #f2f2f2;
-		border-top-width:2rpx;
-		border-bottom-width:2rpx;
-		margin-left:7%;
-		margin-right:7%;
+
+	.name{
+		display:flex;
+		flex-direction:row;
+		flex-wrap:wrap;
+		justify-content:flex-start;
+		align-items:center;
+      background:#fafafa;
+	  font-size: 26rpx;
+      color: #666; 
+      height:80rpx;
+      padding-left:20rpx;     
 	}
-	.icon_arrow{
-		width:64rpx;
-		height:64rpx;
-		float:right;
+
+	.active {
+		background:#fff;
+		color: #2c2c2c;
+	}
+
+	.category_name{
+		font-size:28rpx;
+		height:30rpx;
+		margin-top:20rpx;
+		margin-left:20rpx;
+	}
+
+	.food_list{
+		postion: relative;
+		z-index: 100;
+		padding: 20rpx 20rpx 20rpx 20rpx;
+		margin-top:-60rpx;
+	}
+
+	.food_item{
+		margin-top:80rpx;
+	}
+
+	.food_image{
+		float:left;
+		width:160rpx;
+		height:160rpx;
+		margin-right:20rpx;
+	}
+
+	.food_name{
+		position:relative;
+		font-size:32rpx;
+		color:#000000;
+		font-weight:bold;
+	}
+
+	.food_desc{
+		width:200rpx;
+		height:36rpx;
+		font-size:24rpx;
+		color:#999999;
+		overflow:hidden; //超出一行文字自动隐藏
+    text-overflow:ellipsis;//文字隐藏后添加省略号
+    white-space:nowrap;  //强制不换行
+	}
+	.food_msg{
+		font-size:22rpx;
+		color:#999999;
 		margin-top:8rpx;
 	}
 
+	.food_minprice{
+		font-weight:bold;
+		font-size:34rpx;
+		color:red;
+		margin-top:8rpx;
+	}
+	.food_originalPrice{
+		font-weight:normal;
+		font-size:22rpx;
+		color:#999999;
+		text-decoration:line-through;
+		margin-left:20rpx
+	}
+	//商品列表选择属性
+	.chose_attr{
+		float:right;
+		position:relative;
+		font-size:24rpx;
+		border-radius:25px;
+		width:100rpx;
+		height:40rpx;
+		line-height:40rpx;
+		text-align:center;
+		top:-40rpx;
+		right:5rpx;
+	}
+	 .pro_list_redpoint{
+	 	float:right;
+	 	width:28rpx;
+	 	height:28rpx;
+	 	line-height:28rpx;
+	 	text-align:center;
+	 	font-size:20rpx;
+	 	color:#fff;
+	 	background:red;
+	 	z-index:999;
+	 	position:relative;
+	 	top:-56rpx;
+	 	left:100rpx;
+	 	border-radius:360rpx;
+	}
+	//商品列表添加数量
+	.beAttr_addnum_container{
+		float:right;
+		margin-top:-40rpx;
+		margin-right:10rpx;
+		.beAttr_addnum{
+			width:45rpx;
+			height:45rpx;
+		}
+	}
 
-	.modal-mask {
+
+
+	.op_num_pro_list{
+		float:right;
+		margin-right:10rpx;
+		text-align:center;
+		margin-top:-40rpx;
+		height:50rpx;
+		line-height:50rpx;
+	}
+	.op_num{
+		float:right;
+		margin-top:18rpx;
+		margin-right:20rpx;
+		text-align:center;
+	}
+	.icon_add{
+		width:45rpx;
+		height:45rpx;
+		margin-right:0rpx;
+		margin-left:10rpx;
+	}
+	.icon_reduce{
+		width:45rpx;
+		height:45rpx;
+		margin-left:10rpx;
+	}
+	.pro_num{
+		font-size:30rpx;
+		color:#333333;
+		position:relative;
+		margin-left:10rpx;
+		top:-10rpx;
+	}
+
+.attrmask{
 		width:100%;
 		height:100%;
-		position:fixed;
+		position: fixed;
 		top: 0;
+		left: 0;
+		background:#000;
+		z-index:9000;
+		opacity:0.4;
+	}
+	.modalDlg_attr{
+		width:80%;
+		position:fixed;
+		top:50%;
 		left:0;
-		background: #666;
-		opacity: 0.5;
-		overflow: hidden;
-		z-index: 90000;
+		z-index: 9999;
+    	margin: -370rpx 10%;
+		background-color:#fff;
+		border-radius:5rpx;
+		display:flex;
+		flex-direction:column;
+		aligin-items:center;		
 	}
-	.coupon-list{
-		width: 540rpx;
-		height:450rpx;
-		padding:25rpx 0;
-		overflow:hidden;
-		position:absolute;
-		top:40%;
-		left:0;
-		z-index:99999;
-		background:#ffffff;
-		margin: -180rpx 105rpx;
-		border-radius:8rpx;
+	.modal_name_attr{
+		text-align:center;
+		font-size:32rpx;
+		margin-top:15rpx;
+		color:#333333
 	}
-	.coupon-item{
-		width:500rpx;
-		height:100rpx;
-		padding:30rpx 20rpx;
+	.rule_box {
+		padding-left:26rpx;
+		padding-right:26rpx;
+		padding-bottom:26rpx;
+		.title {
+			color: #4c4c4c;
+			font-size: 28rpx;
+			margin-top: 10rpx;
+		}
+		.items {
+			display: flex;
+			flex-wrap: wrap;
+			margin-top: 5rpx;
+			margin-left: -20rpx;
+		}
+		.item {
+			padding: 8rpx 20rpx;
+			background: #e6e6e6;
+			color: #000;
+			margin-left: 20rpx;
+			margin-top: 10rpx;
+			border-radius: 10rpx;
+			font-size:28rpx;
+		}
+		.attractive {
+			background: #ed394a;
+			color: #fff;
+		}
 	}
-
-.coupons-list {
-  width: 92%;
-  padding-top: 10px;
-  margin: 0 auto;
-  margin-bottom: 50px;
-}
-
-.coupons-item {
-  color: #fff;
-  font-size: 30rpx;
-  background: linear-gradient(to right, #eb7073, #f4948a);
-  margin-bottom: 10px;
-  padding-top: 10px;
-  border-radius: 5px;
-  position: relative;
-}
-
-.money-left {
-  width: 70px;
-  font-size: 60rpx;
-  margin: 10px 0px;
-  display: inline-block;
-  text-align: center;
-  color:#fff;
-}
-
-.money-left text {
-  font-size: 28rpx;
-  padding-left: 6px;
-}
-
-.money-right {
-  margin: 10px 0px;
-  display: inline-block;
-}
-
-.money-name {
-  font-size: 30rpx;
-  color:#fff;
-}
-
-.money-hold {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.money-home {
-  display: inline-block;
-  float: right;
-  margin: 18px 0px;
-  background-color: rgba(255, 255, 255, 0.8);
-  color: #e65e5f;
-  font-size: 25rpx;
-  padding: 3px 10px;
-  border-radius: 3px;
-  margin-right: 10px;
-}
-
-.money-line {
-  background-image: url(https://cdn.it120.cc/apifactory/2018/03/07/10164d7252e986ba85b372a99fd353c0.png);
-  height: 4px;
-  width: 100%;
-  background-size: 10px 5px;
-}
-
-.money-fooder {
-  background-color: rgba(0, 0, 0, 0.08);
-  font-size: 26rpx;
-  padding: 8px 10px;
-  color: rgba(255, 255, 255, 0.8);
-  border-bottom-right-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-.authorize-icon{
-	width: 128rpx;
-	height: 128rpx;
-	display: block;
-	margin: 0 auto;
-	padding-bottom: 10rpx;
-}
-.auth-item{
-	font-size: 32rpx;
-	padding: 5rpx 0;
-	text-align: center;
-}
-.btn-authorize{
-	margin: 100rpx 50rpx;
-}
-.bottom-text{
-	width:100%;
-	height:80rpx;
-	text-align:center;
-	margin-top:50rpx;
-	background:#f2f2f2;
-}
-
-.closedialog-btn{
-	width:65rpx;
-	height:65rpx;
-	font-size:36rpx;
-	color:#999;
-	border-radius:360rpx;
-	background:#fff;
-	position:absolute;
-	z-index:99999;
-	top:75%;
-	line-height:65rpx;
-	text-align:center;
-	left:45%;
-	padding:5rpx;
-	background-color: rgba(255,255,255,0);
-}
-
-	.textsize1{
-		font-size:36rpx;
+	.attrmodal_bottom{
+		height:90rpx;
+		width:100%;
+		background:#fafafa;
 	}
-	.textsize2{
-		font-size:28rpx;
+	.attrmodal_minPrice{
+		position:relative;
+		font-size:40rpx;
+		font-weight:bold;
+		color:red;
+		left:15rpx;
+		top:18rpx;
 	}
-	.textcolor1{
-		color:#000000;
-	}
-	.textcolor2{
-		color:#333333;
-	}
-	.textcolor3{
-		color:#666666;
-	}
-	.textcolor4{
+	.attrmodal_originPrice{
+		position:relative;
+		top:20rpx;
+		left:20rpx;
+		font-size:24rpx;
 		color:#999999;
+		text-decoration:line-through;
 	}
+	.add_cart{
+		float:right;
+		position:relative;
+		width:220rpx;
+		height:58rpx;
+		line-height:58rpx;
+		top:18rpx;
+		right:15rpx;
+		text-align:center;
+		background:#ffeb3b;
+		border-radius:35rpx;
+		.add_cart_pic{
+			width:40rpx;
+			height:40rpx;
+			float:left;
+			margin-left:20rpx;
+			margin-top:10rpx;
+		}
+		.add_cart_text{
+			font-size:26rpx;
+			color:#333333;
+			margin-bottom:10rpx;
+		}
+	}
+	.attractive{
+		background: #ed394a;
+		color: #fff;		
+	}	
+	.btn_balance_wx{
+		float:right;
+		background:#ffc400;
+		font-size:30rpx;
+		height:90rpx;
+		line-height:90rpx;
+		width:170rpx;
+		text-align:center;
+		font-weight:600;
+		color:#fff;
+	}
+	.btn_balance_cash{
+		float:right;
+		background:#ffc400;
+		font-size:30rpx;
+		height:90rpx;
+		line-height:90rpx;
+		width:170rpx;
+		text-align:center;
+		font-weight:600;
+		color:#333;
+	}
+	
+
+
 </style>
 
+<template>
+	<!-- 顶部 -->
+	<view class="top_box">
+		<view class="top_tab textcolor1"><text>菜单</text></view>
+	</view>
+	<!-- 中间 -->
+	<view class="content_box" style="height:{{windowHeight-95}}px">
+		<!-- 左侧菜单 -->
+		<scroll-view class="category_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
+			<view class="name text_overflow {{item.active?'active':''}}" wx:for="{{categoryList}}" wx:key="item" @tap="onChangeCategory" data-id="{{item.fListId}}" data-index="{{index}}">
+				<text>{{item.fListName}}</text>
+				<image src="{{item.url}}" style="width:40rpx;height:40rpx;margin-left:10rpx;"></image>
+			</view>
+		</scroll-view>
+		<!-- 右侧菜单 -->
+		<scroll-view class="food_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
+			<view class="category_name">{{categoryName}}</view>
+			<view class="food_list">
+				<view class="food_item" wx:for="{{foodMsgList}}" wx:for-item="item" wx:key="index" data-index="{{index}}" @tap="showM">
+					<image class="food_image" mode="aspectFill" src="{{item.fGoodsImg}}"></image>
+					<view class="food_name">{{item.fName}}</view>
+					<view class="food_desc">{{item.fGoodsNote}}</view>
+					<view class="food_msg">月售 {{item.fSellNum==null?0:item.fSellNum}}</view>
+					<view class="food_minprice">￥{{item.fBaseAmount}}<text class="food_originalPrice">{{item.fOldPrice==0||item.fOldPrice==undefined?"":'￥'+item.fOldPrice}}</text></view>
+					<!-- 商品有属性规格 -->
+					<view class="chose_attr type_theme_color" data-index="{{index}}" data-id="{{item.fGoodsId}}" data-price="{{item.fBaseAmount}}" data-name="{{item.fName}}" wx:if="{{item.fAttrNum>0}}" @tap.stop="onShowAttrModal">选规格</view>
+					<span class="pro_list_redpoint" wx:if="{{item.num>0}}">{{item.num}}</span>
+					<!-- 商品没有属性规格，直接显示加号 -->
+					<view class="beAttr_addnum_container" wx:if="{{item.fAttrNum==0&&item.num==0}}">
+						<image class="beAttr_addnum" src="../images/icon_add_num.png" @tap.stop="onGoodsAdd" data-type="addNum" data-id="{{item.fGoodsId}}" data-index="{{index}}" data-price="{{item.fBaseAmount}}"></image>
+					</view>
+					<!-- 商品没有属性规格，斌且购物车中有该商品存在 -->
+					<view class="op_num_pro_list" wx:if="{{item.fAttrNum==0&&item.num!=0&&item.num!=undefined}}">
+						<image class = "icon_reduce" @tap.stop="onOptionNum" data-index="{{index}}" data-id="{{item.fGoodsId}}" data-price="{{item.fBaseAmount}}" data-type="reduce" src="../images/icon_reduce_num.png"></image>
+						<text class="pro_num">{{item.num}}</text>
+						<image class="icon_add" @tap.stop="onOptionNum" data-index="{{index}}" data-type="add" data-id="{{item.fGoodsId}}" data-price="{{item.fBaseAmount}}" src="../images/icon_add_num.png"></image>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+		</view>
+	</view>
+	<!-- 底部 -->
+	<view class="bottom_box">
+		<view class="{{allPrice==0||allPrice==undefined?'pic_shopcart_bg_null':'pic_shopcart_bg'}}"><image class="pic_shopcart" src="../images/icon_shop_cart.png"></image></view>
+		<view class="shopcart_num_redpoint" wx:if="{{allPrice==0||allPrice==undefined?false:true}}">{{allProNum}}</view>
+		<text class="all_price">{{allPrice==0||allPrice==undefined?'':'￥'+allPrice}}</text>
+<!-- 		<text class="distributionPrice">另需配送费{{shopInfo.fDistributionPrice}}元</text> -->
+<!-- 		<text class="btn_balance_cash" @tap="onBalance" wx:if="{{type!=3}}" data-paytype="1">现金支付</text> -->
+		<text class="btn_balance_wx" @tap="onBalance" data-paytype="0">结算</text>
+	</view>
+	<!-- 商品信息弹窗 -->
+	<foodMsgModal :modal.sync="modalItem" @msgModal.user="onMsgModal" wx:if="{{showMsgModal}}"></foodMsgModal>
+	<!-- 商品属性弹窗 -->
+	<foodAttrModal @attrModal.user="onAttrModal" @addShopCart.user="onAttrAddShopCart" @attrAddProNum.user="attrAddProNum" @attrReduceProNum.user="attrReduceProNum" wx:if="{{showAttrModal}}"></foodAttrModal>
+</template>
 
 <script>
-import wepy from 'wepy'
-import api from '@/api/api'
-import tip from '@/utils/tip'
-import util from '@/utils/util'
-import {
-	SHOPID,
-	SHOPPHONE,
+import wepy from 'wepy';
+import api from '@/api/api';
+import{
 	SYSTEM_INFO,
-	TOKEN,
-	CUSTID,
-	IS_COUPON,
-	MEMNUM,
-	DISCOUNT,
-	USER_INFO,
-	OPENID,
-	APPID
-} from '@/utils/constant';
+	ACTIVE_CODE,
+	ATTR_ACTIVE_CODE,
+	SHOP_CART,
+	SHOPID,
+	ADDRESS_ID,
+	ORDER_COUPON,
+	CUSTID
+} from '@/utils/constant'
 
-export default class Thome extends wepy.page{
+import FoodMsgModal from '../components/food_msg_modal'
+import FoodAttrModal from '../components/food_attr_modal'
+import tip from '@/utils/tip'
+export default class foodMenuParce extends wepy.page{
 	config = {
-		navigationBarTitleText:'首页',
-		navigationBarBackgroundColor: '#413d3c',
-		navigationBarTextStyle: 'white',
+		navigationBarTitleText:'佳冠食品行',
+		navigationBarBackgroundColor: '#fff',
+		navigationBarTextStyle: 'black'
 	}
 
 	components = {
-
+		foodMsgModal:FoodMsgModal,
+		foodAttrModal:FoodAttrModal,
 	}
-	
+
 	data = {
-		imgUrls:[
-			'http://opmzmyurr.bkt.clouddn.com/huangjing1.PNG',
-			'http://opmzmyurr.bkt.clouddn.com/huangjing2.PNG',
-			'http://opmzmyurr.bkt.clouddn.com/huangjing3.PNG',
-			'http://opmzmyurr.bkt.clouddn.com/huangjing4.PNG',
-			'http://opmzmyurr.bkt.clouddn.com/huangjing5.PNG',
-			'http://opmzmyurr.bkt.clouddn.com/huangjing6.PNG',
-		],
+		isShopCart:true,
 		windowHeight:0,
-		bgImg:'http://opmzmyurr.bkt.clouddn.com/xpcf_bg.PNG',
-		logo:'../images/logo.png',
 		shopId:'',
-		custId:'',
-		token:'',
-		shop_logo:'',
-		shop_name:'',
-		open_time:'',
-		phone:'',
-		address:'',
-		notice:'',
-		latitude:'',
-		longitude:'',
-		isAddressCover:false,
-		isTimeCover:false,
-		isNoticeCover:false,
+		custId:0,
+		tableNo:null,
 
-		couponDataList:[],
-		isShowModal:false,
-		isShowGetPmsModal:false,
+		iconUrl:[
+			'../images/nw_icon.png',
+			'../images/fg_icon.png',
+			'../images/jnd_icon.png',
+			'../images/rb_icon.png',
+			'../images/els_icon.png',
+			'../images/zg_icon.png',
+			'../images/zg_icon.png',
+			'../images/xxl_icon.png',
 
-		AppId:'wxf13c03d906a88dae',
-		addressX:0,
-		addressY:0,
-		openUserId:161104,
-		taskId:0,	
-		navigateType:'',
-		tableNo:'',
-		nickName:'',	
+		],
+		categoryList:[],
+		foodMsgList:[],
+		attrMsgList:[],
+		shopCart:[],
+		goodsMsg:{},//当前操作的商品信息
+		shopInfo:{},//商铺信息
+
+		allPrice:'',
+		allProNum:'',
+
+		showMsgModal:false,
+		showAttrModal:false,
+		modalItem:{},
+		modalAttrItem:{},
+
+		curCategoryActiveIndex:'',//标识当前操作的分类下标
+		curGoodsListIndex:'',//标识当前操作的商品列表下标
+		curShopCartIndex:'',//标识当前操作的购物车下标
+
+		isGoodsNum:false,//判断购物车中是否有该商品的数量
+		type:null,
 	}
 
-	async onLoad(opts){
-		wx.getSystemInfo({
-			success(res){
-				console.log('getSystemInfo===',res)
-			},
-			fail(res){
-				console.log('getSystemInfo,fail==',res)	
-			}
-		})
+	onLoad(opts){
+		this.shopId = wepy.getStorageSync(SHOPID)||{};
+		this.shopCart = wepy.getStorageSync(SHOP_CART)||[];
+		this.custId = wepy.getStorageSync(CUSTID)||null
 		this.tableNo = opts.tableNo
-		this.navigateType = opts.navigateType // 获取扫描二维码进来的参数
-
-		let that = this
-		let systemInfo = wx.getStorageSync(SYSTEM_INFO);			
-		if(systemInfo==null||systemInfo==""||systemInfo==undefined){
-			systemInfo = wepy.getSystemInfoSync();
-       		wepy.setStorageSync(SYSTEM_INFO, systemInfo);						
-		}
-		this.windowHeight = systemInfo.windowHeight - systemInfo.windowWidth/2;
-		//判断用户是否配置设置
-		if(wepy.getStorageSync(USER_INFO)||null !=null){
-			console.log("执行isToken");
-			that.isToken();
+		console.log('桌面二维码桌号：',this.tableNo)
+		this.type = opts.type
+		if(opts.type == undefined){
+			this.type = 0
 		}else{
-			this.isShowGetPmsModal = true
+			this.type = opts.type
 		}
-		wx.getLocation({
-				success:function(res){
-					that.addressX = res.longitude
-					that.addressY = res.latitude
-				}
-		})
+		console.log('opts.type===',opts.type)
+		this.getCategoryList();
+		console.log(this.showMsgModal);
+			let systemInfo = wx.getStorageSync(SYSTEM_INFO);			
+			if(systemInfo==null||systemInfo==""||systemInfo==undefined){
+				systemInfo = wepy.getSystemInfoSync();
+        		wepy.setStorageSync(SYSTEM_INFO, systemInfo);						
+			}
+			this.windowHeight = systemInfo.windowHeight;
+			console.log("windowHeight=====");
+			console.log(this.windowHeight);	
+			this.getShopMsg();		
 	}
 
-
-	async wxlogin(){
-		let reslogin = await wepy.login();
-		console.log("wxcode:");
-		console.log(reslogin.code);
-		// tip.toast("进入了wxlogin")
-		if(reslogin.errMsg == "login:ok"){
-			if(this.nickName == ''){
-				this.nickName = wepy.getStorageSync(USER_INFO).nickName||'blank'
-			}
-			// tip.toast("开始调用wxlogin")
-			const json = await api.sendWxCode({
-				query:{
-					hostUrl:this.$parent.globalData.hostUrl,
-					code:reslogin.code,
-					fAppId:this.AppId,
-					fPhone:null,
-					fType:1,
-					fAddressX:this.addressX,
-					fAddressY:this.addressY,
-					// fNickName:this.nickName
-				},
-				method:'POST'
-			})
-			console.log("发送wxcode请求......");
-			console.log(json);
-			if(json.data.code == 0){
-					//保存token到本地
-					wepy.setStorageSync(TOKEN,json.data.token);//
-					wepy.setStorageSync(CUSTID,json.data.data.fId);
-					wepy.setStorageSync(OPENID,json.data.data.openId);
-					wepy.setStorageSync(SHOPID,json.data.data.fShopId);
-					wepy.setStorageSync(APPID,this.AppId)
-					console.log(json.data.data.fShopId[0])
-					//用户有注册
-					this.isShowGetPmsModal = false
-					this.onLoadSuccess()
-				}else{
-					//重新调用登录功能
-					let res = await wepy.showModal({
-						title: '获取token失败',
-						cotent: '登录失败'
-					})
-					if(res.confirm){
-						this.wxlogin() // 重新调用登录接口
-					}
-				}	
-			}
-		}
-
-	async isToken(){
-		let that = this;
-		var token = wepy.getStorageSync(TOKEN);
-		if(token==undefined || token==''){
-			//token为空，重新调用获取token接口
-			that.wxlogin();
-		}else{
-			//token有值存在
-			let json = await api.checkToken({
-				query:{
-					token:token
-				},
-			})
-			console.log("执行token接口");
-			console.log(json);	
-			if(json.data.code == 0){
-				this.isShowGetPmsModal = false
-				this.onLoadSuccess()
-			}else{
-				//token过期，重新请求token
-				that.wxlogin();
-			}
-		}
+	onUnload(){
+		this.shopCart = [] 
+		wepy.setStorageSync(SHOP_CART,[])
+		this.allProNum = ''
+		this.allPrice = ''
 	}
 
-	async onGotUserInfo(e){
+	async getCategoryList(){
 		let that = this;
-		if(e.detail.errMsg == 'getUserInfo:ok'){
-			let res = await wepy.login();
-			console.log("用户登录信息:");
-			console.log(res);
-			// tip.toast("用户登录信息")
-			if(res.code){
-				console.log(e.detail);
-				// 存储用户信息到本地
-				wepy.setStorageSync(USER_INFO,e.detail.userInfo);
-				that.nickName = e.detail.userInfo.nickName
-				let systemInfo = wepy.getSystemInfoSync();
-				// 存储系统信息到本地
-				wepy.setStorageSync(SYSTEM_INFO,systemInfo);
-				// wepy.switchTab({
-				// 	url:'/pages/home'
-				// })
-				// tip.toast("即将进入isToken")
-				that.isToken();
-			}
-		}
-	}
-
-	//获取商家信息
-	async getShopInfo(){
-		let that = this;
-		let json = await api.getShopInfo({
+		const json = await api.getCategory({
 			query:{
-				fShopId:that.shopId,
-				fCustId:that.custId
+				fShopId:that.shopId
+			}
+		})
+		console.log("getCategoryList===",json);
+		if(json.data.code == 0){
+			this.categoryList = json.data.data;
+			for(let i = 0,j=this.categoryList.length;i<j;i++){
+				this.categoryList[i].url = this.iconUrl[i]
+			}
+		}else{
+			tip.error("网络连接失败!");
+			return;
+		}
+
+		//为categoryList每个item添加active
+		for(let i = 0; i<this.categoryList.length; i++){
+			if(i == 0){
+				//去第一个item为默认选中
+				this.categoryList[i].active = true;
+				this.curCategoryActiveIndex = 0;
+			}else{
+				this.categoryList[i].active = false;
+			}
+		}
+		//判断分类下面是否有缓存商品，有则不需要调用接口获取
+		if(this.categoryList[0].fGoodsList==undefined){
+			this.getFoodMsgList(this.categoryList[0].fListId);
+		}else{
+			this.foodMsgList = this.categoryList[0].fGoodsList;
+		}
+		this.$apply();
+	}
+
+	async getFoodMsgList(categoryId){
+		const json = await api.getFoodMsgList({
+			query:{
+				fShopId:this.shopId,
+				fGoodsListId:categoryId,
+				fGoodsName:'',
+				fGoodsId:''
+			}
+		})
+		console.log("getFoodMsgList===",json);
+		if(json.data.code == 0){
+			this.foodMsgList = json.data.data;
+			//为每个商品添加数量（购物车中存在的数量）
+			for(let i=0;i<this.foodMsgList.length;i++){
+				this.foodMsgList[i].num = 0;
+			}
+			//将商品信息缓存到分类下面
+			this.categoryList[this.curCategoryActiveIndex].fGoodsList=json.data.data;
+		}else{
+			tip.error("网络连接失败！");
+			return;
+		}
+		this.$apply();
+		console.log("获取分类下面的商品信息：",this.foodMsgList,this.categoryList);
+	}
+
+	async getAttributeList(goodsId,basePrice,goodsName,goodsImg){
+		const json = await api.getAttrMsgList({
+			query:{
+				fGoodsId:goodsId
 			}
 		});
-		console.log('getShopInfo===',json);
+		console.log("getAttributeList===",json);
 		if(json.data.code == 0){
-			//请求成功
-			let data = json.data.data[0];
-			that.open_time = data.fOpenTime+'-'+data.fCloseTime;
-			that.phone = data.fPhone;
-			wepy.setStorageSync(SHOPPHONE,that.phone);//保存商家手机号码，用于其它页面可直接获取
-			that.address = data.fAddress;
-			that.shop_name = data.fName;
-			that.latitude = data.fAddressX;
-			that.longitude = data.fAddressY;
-			this.notice = data.fNotice;
-			this.shop_logo = data.fLogo;
-			wepy.setStorageSync(MEMNUM,data.fMemNum)
-			// this.bgImg = data.fLogo
-			if(this.notice==null||this.notice==''){
-				this.notice = ''
-				// this.notice = that.shop_name+"没啥可说的..."
-			}
-		}else{
-
+			this.attrMsgList = json.data.data;
+			this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].fAttrList=this.attrMsgList;
+			this.setAttrItemActive(goodsId,basePrice,goodsName,goodsImg);
 		}
-		that.$apply();
+		this.$apply();
 	}
 
-	async onGetMemberDetail(){
-		const json = await api.memberDetail({
+	async getShopMsg(){
+		const json = await api.getShopInfo({
 			query:{
-				fShopId:parseInt(this.shopId),
+				fShopId:this.shopId,
 				fCustId:this.custId
 			}
-		})
-		console.log('onGetMemberDetail===',json)
-		if(json.data.code==0){
-			if(json.data.data[0].result==-1){
-				wepy.setStorageSync(DISCOUNT,0)
-			}else{
-				wepy.setStorageSync(DISCOUNT,json.data.data[0].fDisCount)
-			}
-			this.$apply()
-		}
-		//扫描桌面二维码进来的
-		if(this.navigateType == 'order'){
-			let that = this
-			wx.navigateTo({
-				url:'foodMenuOrder?tableNo='+that.tableNo
-			})
-		}else if(this.navigateType == 'list'){
-			wx.navigateTo({
-    		url: '/packageA/pages/list'
-   		})
-		}
-	}
-
-	async getShopCouponsList(){
-		const json = await api.getShopCouponList({
-			query:{
-				fShopId:this.shopId
-			}
-		})
-		console.log('getShopCouponList===',json)
+		});
+		console.log("getShopMsg===",json);
 		if(json.data.code == 0){
-			this.couponDataList = json.data.data
-			if(this.couponDataList.length > 0 && this.couponDataList[0].result!=-1){
-				// 判断商家是否新增优惠券
-				if(wepy.getStorageSync(IS_COUPON) < this.couponDataList.length){
-					this.isShowModal = true
-				}
-				this.couponSize = this.couponDataList.length
-			}
-			this.$apply()
+			this.shopInfo = json.data.data[0];
 		}else{
-
+			tip.error("网络连接失败!");
 		}
+		this.$apply();
 	}
 
-	async reviceCoupon(couponId,startDate,endDate){
-		const json = await api.receiveCoupon({
-			query:{
-				token:this.token,
-				fShopId:this.shopId,
-				fCouponId:couponId,
-				fNum:1,
-				fCustId:this.custId,
-				fBegDate:startDate,
-				fEndDate:endDate,
-				fDaysNum:0,
-				fStatus:1,
-				fUse:0,
-			},
-			method:'POST'
-		})
-		console.log("reviceCoupon===",json)
-		if(json.data.code == 0){
-			tip.toast('领取成功')
-			wepy.setStorageSync(IS_COUPON,true)
-		}else if(json.data.code == -1){
-			tip.toast('您已领取过该优惠券')
-			wepy.setStorageSync(IS_COUPON,true)
-		}else if(json.data.code == -2){
-			tip.toast('优惠券已领完')
-			wepy.setStorageSync(IS_COUPON,true)			
-		}
-	}
-		onLoadSuccess(){
-			this.shopId = parseInt(wepy.getStorageSync(SHOPID)||{});
-			this.custId = parseInt(wepy.getStorageSync(CUSTID))
-			this.token = wepy.getStorageSync(TOKEN)
-			//加载商户信息
-			this.getShopInfo();
-			this.onGetMemberDetail();
-			// 获取商铺优惠券
-			this.getShopCouponsList()
-		}
 
-	async onSaveFormId(formId){
-		const json = await api.saveFormId({
-			query:{
-				fId: null,
-				fShopId: this.shopId,
-				fCustId: this.custId,
-				fFormId: formId,
-				fTimeStamp:util.getTimeStamp()
-			},
-			method:'POST'
-		})
-		console.log('onSaveFormId===',json)
+	/**
+	 * 加入购物车
+	 * 1.判断购物车中是否有该商品存在；
+	 * 2.存在，判断属性是否相同；
+	 * 		相同：则进行增减操作；
+	 * 		不相同：push进购物车；
+	 * 		数量为0，删减掉该条目；
+	 * 3.不存在，直接push进购物车；
+	 * @param {对象} [scItem] [商品基本信息，包含价格、属性、数量];
+	 * @param {boolean} [isGoodsAdd] [判断是否是商品列表的添加icon，如果是，说明购物车中没有该商品，直接push];
+	 * @param {boolean} [isAdd] [判断是增加还是减少]
+	 */
+	onAddShopCart(scItem,isGoodsAdd,isAdd,isattr){
+		if(isGoodsAdd){
+			this.shopCart.push(scItem);
+			console.log("push进入shopCart的scItem==",scItem);
+			if(isattr)this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].num++;
+		}else{
+			if(this.beShopCartGoodsAttr(scItem)=='isGoodsAttr'){
+				console.log("isGoodsAttr")
+				//有相同的商品和属性存在购物车中
+				if(isAdd){
+					console.log("isAdd")
+					//更新商品列表数量，更新购物车商品数量和价格
+					
+					this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].num++;
+					this.shopCart[this.curShopCartIndex].fNum++;
+					this.shopCart[this.curShopCartIndex].fAllAmount = this.shopCart[this.curShopCartIndex].fNum*this.shopCart[this.curShopCartIndex].fBaseAmount;
+					// scItem.fNum++;
+					scItem.fAllAmount=this.shopCart[this.curShopCartIndex].fAllAmount;
+					console.log("添加之后的购物车===",this.shopCart,scItem);
+
+				}else{
+					console.log("isReduce")
+					this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].num--;
+					this.shopCart[this.curShopCartIndex].fNum--;
+					if(this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].num==0){
+						//商品数量等于0,移除购物车中商品
+						this.shopCart.splice(this.curShopCartIndex,1);
+						// scItem.fNum--;
+						scItem.fAllAmount = scItem.fBaseAmount;
+					}else{
+						this.shopCart[this.curShopCartIndex].fAllAmount = this.shopCart[this.curShopCartIndex].fNum*this.shopCart[this.curShopCartIndex].fBaseAmount;
+						// scItem.fNum--;
+						scItem.fAllAmount = this.shopCart[this.curShopCartIndex].fAllAmount;
+					}
+				}
+
+			}else if(this.beShopCartGoodsAttr(scItem)=='isGoods'){
+				console.log("isGoods")
+				//只有相同商品存在购物车，属性不相同
+				this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].num++;
+				this.shopCart.push(scItem);
+			}else if(this.beShopCartGoodsAttr(scItem)=='isNull'){
+				console.log("isNull")
+				//该商品没有存在购物车中
+				this.shopCart.push(scItem);
+			}
+		}
+		console.log("加减之后的scItem===",scItem);
+		if(isattr){
+			this.$invoke("foodAttrModal","setAttrItem",this.showAttrModal,scItem);
+		}
+		this.$invoke("foodAttrModal","refreshShopCartList",this.shopCart);
+		console.log("onAddShopCart===");
+		this.countShopCart();
+	}
+
+	/**
+	 * 判断购物车中是否存在该商品斌且属性相同
+	 * @param {对象} [scItem] [商品基本信息，包含价格、属性、数量];
+	 * @return {boolean} 
+	 */
+	beShopCartGoodsAttr(scItem){
+		console.log("判断beShopCartGoodsAttr.scItem===",scItem);
+		console.log("判断beShopCartGoodsAttr.shopCart===",this.shopCart);
+		let isType='';
+		for(let i=0;i<this.shopCart.length;i++){
+			//有商品存在并且属性相同
+			if(this.shopCart[i].fGoodsId == scItem.fGoodsId &&
+				this.shopCart[i].fAttrType1 == scItem.fAttrType1 &&
+				this.shopCart[i].fAttrType2 == scItem.fAttrType2 &&
+				this.shopCart[i].fAttrType3 == scItem.fAttrType3 &&
+				this.shopCart[i].fAttrType4 == scItem.fAttrType4){
+				this.curShopCartIndex = i;
+				return 'isGoodsAttr';
+			}else{
+			//不存在该商品或者商品属性不存在
+				// if(this.shopCart[i].fGoodsId == scItem.fGoodsId){
+				// }
+			}
+		}
+		return 'isGoods';		
+	}
+
+	/**
+	 * 统计购物车的总价格和商品总数量
+	 */
+	countShopCart(){
+		let num = 0;
+		let allPrice = 0;
+		for(let i = 0;i<this.shopCart.length;i++){
+			num+=this.shopCart[i].fNum;//购物车中的所有商品数量相加
+			allPrice+=this.shopCart[i].fAllAmount;//购物车中的所有商品金额相加
+		}
+		this.allPrice = allPrice;
+		this.allProNum = num;
+		console.log("countShopCart===",this.allPrice,this.allProNum,this.shopCart);
+	}
+
+	/**
+	 * 设置属性的选中值
+	 */
+	setAttrItemActive(goodsId,basePrice,goodsName,goodsImg){
+		let attrListItem = {};
+		attrListItem.fBasePrice = basePrice;
+		attrListItem.fBaseAmount = basePrice;
+		attrListItem.fNum = 0;
+		attrListItem.fGoodsId = goodsId;
+		attrListItem.fGoodsName = goodsName;
+		attrListItem.fGoodsImg = goodsImg
+		console.log("计算前===",basePrice,attrListItem);
+		if(!this.isGoodsNum){
+			//购物车没有该商品存在，取该商品各属性类别下面的第一个属性作为默认选中。
+			for(let i = 0;i<this.attrMsgList.length;i++){
+				for(let j = 0;j<this.attrMsgList[i].fUnionName.length;j++){
+					if(j==0){
+						this.attrMsgList[i].fUnionName[j].active=true;
+						attrListItem.fBaseAmount+=this.attrMsgList[i].fUnionName[j].fAddPrice;  
+						console.log("计算后===",attrListItem.fBaseAmount,this.attrMsgList[i].fUnionName[j].fAddPrice);
+						if(i==0){
+							attrListItem.fAttrType1 = this.attrMsgList[i].fUnionName[j].fItemId;
+							attrListItem.fAttrPrice1 = this.attrMsgList[i].fUnionName[j].fAddPrice;	
+							attrListItem.fAttrName1 = this.attrMsgList[i].fUnionName[j].fName;	
+						}else if(i==1){
+							attrListItem.fAttrType2 = this.attrMsgList[i].fUnionName[j].fItemId;
+							attrListItem.fAttrPrice2 = this.attrMsgList[i].fUnionName[j].fAddPrice;
+							attrListItem.fAttrName2 = this.attrMsgList[i].fUnionName[j].fName;
+						}else if(i==2){
+							attrListItem.fAttrType3 = this.attrMsgList[i].fUnionName[j].fItemId;
+							attrListItem.fAttrPrice3 = this.attrMsgList[i].fUnionName[j].fAddPrice;
+							attrListItem.fAttrName3 = this.attrMsgList[i].fUnionName[j].fName;
+						}else if(i==3){
+							attrListItem.fAttrType4 = this.attrMsgList[i].fUnionName[j].fItemId;
+							attrListItem.fAttrPrice4 = this.attrMsgList[i].fUnionName[j].fAddPrice;
+							attrListItem.fAttrName4 = this.attrMsgList[i].fUnionName[j].fName;
+						}
+					}else{
+						this.attrMsgList[i].fUnionName[j].active =false;
+					}
+				}
+			}
+			attrListItem.fAllAmount = attrListItem.fBaseAmount;
+		}else{
+			//购物车有该商品存在，循环遍历对应的规格属性
+			for(let k = 0;k<this.shopCart.length;k++){
+				if(this.shopCart[k].fGoodsId==goodsId){
+					attrListItem = this.shopCart[k];
+					for(let i = 0;i<this.attrMsgList.length;i++){
+
+						let attrType = {};
+						if(i==0){
+							attrType = this.shopCart[k].fAttrType1;
+						}else if(i==1){
+							attrType = this.shopCart[k].fAttrType2;
+						}else if(i==2){
+							attrType = this.shopCart[k].fAttrType3;
+						}else if(i==3){
+							attrType = this.shopCart[k].fAttrType4;
+						}
+
+						for(let j = 0;j<this.attrMsgList[i].fUnionName.length;j++){
+							if(attrType==this.attrMsgList[i].fUnionName[j].fItemId){
+								this.attrMsgList[i].fUnionName[j].active = true;
+							}else{
+								this.attrMsgList[i].fUnionName[j].active = false;
+							} 
+						}
+					}
+					break;//找到购物车中第一个相对应的商品，就跳出，不然可能存在shopCart中有多条相同商品记录
+				}
+			}
+		}
+			this.showAttrModal = true;
+			this.$invoke("foodAttrModal","refreshAttrList",this.attrMsgList)
+			this.$invoke("foodAttrModal","setAttrItem",this.showAttrModal,attrListItem);
+
+		console.log("setAttrItemActive==");
+		this.$apply();
 	}
 
 	methods = {
-		onCloseDialog(e){
-			this.isShowModal = false
-			let formId = e.detail.formId
-			this.onSaveFormId(formId)
+		//选择商品分类列表
+		onChangeCategory(e){
+			let index =e.currentTarget.dataset.index;
+			console.log("categoryIndex ==",index);
+			this.categoryList[this.curCategoryActiveIndex].active = false;
+			this.categoryList[index].active = true;
+			this.curCategoryActiveIndex = index;
+			//判断当前选中的分类下面是否有缓存商品，有则不需要调用接口获取
+			if(this.categoryList[index].fGoodsList==undefined){
+				this.getFoodMsgList(this.categoryList[index].fListId);
+			}else{
+				this.foodMsgList = this.categoryList[index].fGoodsList;
+			}
+			console.log("categoryList==",this.categoryList);
 		},
-		onCatchCoupon(e){
-			let formId = e.detail.formId
-			let couponId = e.target.dataset.item.fCouponId
-			this.onSaveFormId(formId)
-			this.reviceCoupon(couponId,util.getCurrentTime(),util.addDate(util.getCurrentTime(),7))
+		//点击加号，加入购物车
+		onGoodsAdd(e){
+			let index = e.currentTarget.dataset.index;
+			this.curGoodsListIndex = index;
+			this.categoryList[this.curCategoryActiveIndex].fGoodsList[index].num = 1;
+			let goodsItem = this.categoryList[this.curCategoryActiveIndex].fGoodsList[index];
+
+			let scItem = {};
+			scItem.fGoodsName = goodsItem.fName
+			scItem.fGoodsId = goodsItem.fGoodsId;
+			scItem.fGoodsImg = goodsItem.fGoodsImg
+			scItem.fAttrType1 = null;
+			scItem.fAttrType2 = null;
+			scItem.fAttrType3 = null;
+			scItem.fAttrType4 = null;
+
+			scItem.fAttrPrice1 = 0;
+			scItem.fAttrPrice2 = 0;
+			scItem.fAttrPrice3 = 0;
+			scItem.fAttrPrice4 = 0;
+
+			scItem.fAttrName1 = '';
+			scItem.fAttrName2 = '';
+			scItem.fAttrName3 = '';
+			scItem.fAttrName4 = '';	
+			scItem.fBasePrice = goodsItem.fBaseAmount;
+			scItem.fBaseAmount = goodsItem.fBaseAmount+scItem.fAttrPrice1+scItem.fAttrPrice2+scItem.fAttrPrice3+scItem.fAttrPrice4;
+			scItem.fNum = 1;
+			scItem.fAllAmount =scItem.fBaseAmount*1;
+			this.onAddShopCart(scItem,true,true);
 		},
-		showMap(){
-			let that = this;
-			wepy.openLocation({
-				latitude:that.latitude,
-				longitude:that.longitude
-			})
+		onOptionNum(e){
+			let index = e.currentTarget.dataset.index;
+			this.curGoodsListIndex = index;			
+			let goodsItem = this.categoryList[this.curCategoryActiveIndex].fGoodsList[index];
+			let scItem = {};
+			scItem.fGoodsName = goodsItem.fName;
+			scItem.fGoodsId = goodsItem.fGoodsId;
+			scItem.fGoodsImg = goodsItem.fGoodsImg
+			scItem.fAttrType1 = null;
+			scItem.fAttrType2 = null;
+			scItem.fAttrType3 = null;
+			scItem.fAttrType4 = null;
+			scItem.fAttrPrice1 = 0;
+			scItem.fAttrPrice2 = 0;
+			scItem.fAttrPrice3 = 0;
+			scItem.fAttrPrice4 = 0;
+			scItem.fAttrName1 = '';
+			scItem.fAttrName2 = '';
+			scItem.fAttrName3 = '';
+			scItem.fAttrName4 = '';			
+
+			let type = e.currentTarget.dataset.type;
+			if(type=='add'){
+				//点击加号，添加购物车中商品数量(商品列表)
+				this.onAddShopCart(scItem,false,true);
+			}else if(type=='reduce'){
+				//点击减号，减去购物车中商品数量(商品列表)
+				this.onAddShopCart(scItem,false,false);
+			}
 		},
-		onSubscribe(e){
+		showM(e){
+			let index= e.currentTarget.dataset.index;
+			this.modalItem = this.foodMsgList[index];
+			this.showMsgModal=true;
+			this.$invoke("foodMsgModal","setModalItem",this.modalItem,this.showMsgModal);
+			console.log(this.showMsgModal);
+		},
+		onMsgModal(showMsgModal){
+			this.showMsgModal = showMsgModal;
+			console.log("onMsgModal===",this.showMsgModal);
+		},
+		onAttrModal(showAttrModal){
+			this.showAttrModal = showAttrModal;
+			console.log("onAttrModal===",this.showAttrModal);
+		},
+		onShowAttrModal(e){
+			let goodsId = e.currentTarget.dataset.id;
+			let index = e.currentTarget.dataset.index;
+			let basePrice = e.currentTarget.dataset.price;
+			let goodsName = e.currentTarget.dataset.name;
+			console.log("basePrice===",basePrice)
+			this.curGoodsListIndex = index;
+			this.goodsMsg.fGoodsId = this.foodMsgList[this.curGoodsListIndex].fGoodsId;
+			this.goodsMsg.fGoodsName = this.foodMsgList[this.curGoodsListIndex].fName;
+			this.goodsMsg.fBasePrice = this.foodMsgList[this.curGoodsListIndex].fBaseAmount;
+			this.goodsMsg.fGoodsImg = this.foodMsgList[this.curGoodsListIndex].fGoodsImg
+			//判断该商品在购物车中是否有数量
+			if(this.categoryList[this.curCategoryActiveIndex].
+				fGoodsList[this.curGoodsListIndex].num==0){
+				this.isGoodsNum = false;
+			}else{
+				this.isGoodsNum = true;
+			}
+			if(this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].fAttrList==undefined){
+				//没有缓存，调用接口获取属性
+				this.getAttributeList(goodsId,basePrice,goodsName,this.goodsMsg.fGoodsImg);
+			}else{
+				//有缓存，直接取缓存内容
+				this.attrMsgList = this.categoryList[this.curCategoryActiveIndex].fGoodsList[this.curGoodsListIndex].fAttrList;
+				this.setAttrItemActive(goodsId,basePrice,goodsName,this.goodsMsg.fGoodsImg);
+			}
+			console.log('打开属性窗口时的商品图片===',this.goodsMsg.fGoodsImg,this.goodsMsg)
+			this.$invoke("foodAttrModal","refreshGoodsMsgList",this.goodsMsg);
+			this.$invoke("foodAttrModal","refreshShopCartList",this.shopCart);
+
+		},
+		onAttrAddShopCart(attrListItem,isGoodsAdd,isAdd){
+			this.onAddShopCart(attrListItem,isGoodsAdd,isAdd,true);
+		},
+		attrAddProNum(attrListItem,isAdd){
+			this.onAddShopCart(attrListItem,false,isAdd,true);
+			console.log("attrAddProNum===",attrListItem);
+		},
+		attrReduceProNum(attrListItem,isAdd){
+			console.log("attrReduceProNum===",attrListItem);
+			this.onAddShopCart(attrListItem,false,isAdd,true);
+			
+		},
+		onBalance(e){
+			let payType = e.currentTarget.dataset.paytype;
+			console.log("支付类型",payType)
+			if(this.shopCart.length == 0){
+				tip.toast("购物车不能为空！");
+				return;
+			}
+			wepy.setStorageSync(SHOP_CART,this.shopCart);
+			wepy.setStorageSync(ADDRESS_ID,'');//初始化 addressId,为下个页面所用
+			wepy.setStorageSync(ORDER_COUPON,null) // 初始化 order_coupon
+			console.log("结算 购物车中的商品:",this.shopCart);
 			wx.navigateTo({
-				url: 'subscribe'
-			})
-		},
-		//店内点单
-		onOrder(e){
-			tip.toast('暂未提供该服务')
-			return
-			let tableNum = null
-			wx.scanCode({
-  				onlyFromCamera: true,
-  				scanType:'qCode',
-  				success:(res)=>{
-    				let tableNum = res.path.split('&')[1].split("=")[1];
-    				console.log("扫描桌面二维码success：",res,tableNum);
-    				wx.navigateTo({
-    					url: 'foodMenuOrder?tableNo='+tableNum
-    				})
-  				},
-  				fail:(res)=>{
-  					console.log("扫描桌面二维码fail:",res);
-  				}
-			})
-		},
-		onParce(e){
-   			wx.navigateTo({
-    			url: 'foodMenuParce'
-    		})
-		},
-		onList(e){
-			tip.toast('暂未提供该服务')
-			return			
-			wx.scanCode({
-  				onlyFromCamera: true,
-  				scanType:'qCode',
-  				success:(res)=>{
-    				console.log("扫描店外小程序二维码success：",res);
-    				let type = res.path.split('navigateType')[1].split("=")[1];
-    				if(type=='list'){
-    					wx.navigateTo({
-    						url: '/packageA/pages/list'
-    					})	
-    				}
-  				},
-  				fail:(res)=>{
-  					console.log("扫描店外小程序二维码fail:",res);
-  				}
-			})
-		},
-		onAddresscover(){
-			let that = this;
-			this.isAddressCover=true;
-			setTimeout(function(){
-				that.isAddressCover = false;
-				that.$apply();
-			},3000);
-			this.$apply();
-		},
-		onTimecover(){
-			let that = this;
-			this.isTimeCover=true;
-			setTimeout(function(){
-				that.isTimeCover = false;
-				that.$apply();
-			},3000);
-			this.$apply();
-		},
-		onNoticecover(){
-			let that = this;
-			this.isNoticeCover=true;
-			setTimeout(function(){
-				that.isNoticeCover = false;
-				that.$apply();
-			},3000);
-			this.$apply();
-		},
-		onCallPhone(){
-			let that = this
-			wx.makePhoneCall({
-				phoneNumber:that.phone
+				url: 'commitOrder?payType='+payType+'&tableNo='+this.tableNo+'&type='+this.type
 			})
 		}
 	}

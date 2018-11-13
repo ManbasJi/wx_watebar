@@ -1,0 +1,472 @@
+<style lang="less">
+	.top_container{
+		font-size:30rpx;
+		color:#333;
+		font-weight:600;
+		width:100%;
+		height:80rpx;
+		line-height:80rpx;
+		padding-left:20rpx;
+
+	}
+	.category_input{
+		height:80rpx;
+		line-height:80rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			color:#999;
+			font-size:28rpx;
+			float:left;
+		}
+		.category_picker{
+			float:left;
+			width:50%;
+		}
+		i{
+			float:right;
+		}		
+	}
+	.goodsName_input{
+		height:80rpx;
+		line-height:80rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			float:left;
+			color:#999;
+			font-size:28rpx;
+		}
+		.text{
+			float:left;
+			color:#999;
+			font-size:28rpx;
+			margin-right:40rpx;
+		}
+		input{
+			float:left;
+			height:50rpx;
+			margin-top:15rpx;
+		}
+	}
+	.goodsDesc_input{
+		height:160rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			float:left;
+			color:#999;
+			font-size:28rpx;
+			margin-top:30rpx;
+			margin-right:40rpx;
+		}
+		textarea{
+			float:left;
+			height:100rpx;
+			width:70%;
+			margin-top:30rpx;
+			border:1rpx solid #cdcdcd;
+			padding:5rpx;
+		}
+
+	}
+	.goodsType_input{
+		height:80rpx;
+		line-height:80rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			color:#999;
+			font-size:28rpx;
+			float:left;
+			margin-right:40rpx;
+		}
+		.type_picker{
+			float:left;
+			width:70%;
+		}
+		i{
+			float:right;
+		}
+	}
+	.goodsPic_upload{
+		height:170rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			color:#999;
+			font-size:28rpx;
+			float:left;
+			margin-top:30rpx;
+		}
+		span{
+			color:red;
+			float:left;
+			margin-right:40rpx;
+			margin-top:30rpx;
+		}
+		view{
+			height:120rpx;
+			width:120rpx;
+			line-height:120rpx;
+			float:left;
+			margin-top:30rpx;
+			border:1rpx dashed #cdcdcd;
+			text-align:center;
+		}
+		image{
+			height:120rpx;
+			width:120rpx;
+			margin-top:30rpx;
+			float:left;
+		}
+	}
+	.goodsAttr{
+		height:80rpx;
+		line-height:80rpx;
+		border-bottom:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;
+		background:#fff;
+		text{
+			color:#999;
+			font-size:28rpx;
+		}
+		i{
+			float:right;
+		}
+	}
+
+	.footer_container{
+		width:100%;
+	}
+
+	.btn_save_goods{
+		background:#ffc400;
+		width:80%;
+		margin-top:40rpx;
+		color:#fff;
+	}
+	span{
+		color:red;
+		float:left;
+		margin-right:40rpx;
+	}
+
+</style>
+
+<template>
+	<view class="top_container">
+		{{type}}
+	</view>
+	<form bindsubmit="onSaveGoods">
+	<view class="middle_container">
+		<view class="category_input">
+			<text>商品类别</text><span>*</span>
+			<picker bindchange="bindCategoryPickerChange" value="{{index}}" range="{{category}}">
+				<view class="category_picker">
+					{{category[index]}}
+				</view>
+				<i class="iconfont icon-arrowdown"></i>	
+			</picker>
+		</view>
+			<view class="goodsName_input">
+				<text>商品名称</text><span>*</span>
+				<input type="text" name="goodsName" value="{{goodsName}}" />
+			</view>
+			<view class="goodsDesc_input">
+				<text>商品描述</text>
+				<textarea name="goodsDesc" value="{{goodsDesc}}"></textarea>
+			</view>
+			<view class="goodsName_input">
+				<text>商品现价</text><span>*</span>
+				<input type="text" name="goodsPrice" value="{{goodsPrice}}"/>
+			</view>
+			<view class="goodsName_input">
+				<text class="text">商品原价</text>
+				<input type="text" name="oldPrice" value="{{oldPrice}}"/>
+			</view>
+		
+		<view class="goodsType_input">
+			<text>商品标签</text>
+			<picker bindchange="bindTypePickerChange" value="{{type_index}}" range="{{typelist}}">
+				<view class="type_picker">
+					{{typelist[type_index]}}
+				</view>
+				<i class="iconfont icon-arrowdown"></i>	
+			</picker>			
+		</view>
+		<view class="goodsPic_upload">
+			<text>商品图片</text><span>*</span>
+			<view wx:if="{{!isImage}}" @tap = "onUploadImage">
+				<i class="iconfont icon-add"></i>
+			</view>
+			<image class="goodsPic" mode="aspectFill" @tap = "onUploadImage" wx:if="{{isImage}}" src="{{imageURL}}"></image>
+		</view>
+<!-- 		<view class="goodsAttr" @tap="goAttr" wx:if="{{isGoodsSave}}">
+			<text>商品规格</text>
+			<i class="iconfont icon-arrowright"></i>	
+		</view>	 -->	
+	</view>
+	<view class="footer_container">
+		<button formType="submit" class="button btn_save_goods">保存</button>
+	</view>
+	</form>
+</template>
+
+<script>
+import wepy from 'wepy'
+import api from '@/api/api'
+import tip from '@/utils/tip'
+import upload from '@/utils/qiniuUploader'
+import {
+	SHOPID,
+	TOKEN
+} from '@/utils/constant'
+export default class AdminProDetailManager extends wepy.page{
+	config = {
+		navigationBarTitleText:"商品详情管理"
+	}
+
+	data = {
+		type:"商品添加",
+		isImage:false,//判断是否有上传商品图片
+		categoryList:[],
+		category:[],
+		categoryId:'',
+		index:0,
+		typelist:['无','推荐','热销','折扣'],
+		type_index:0,
+		type_id:'',
+		shopId:'',
+		imageURL:'',
+		lastImageURL:'',//之前的imageUrl，当图片修改时，需要把该值删除
+		isGoodsSave:false,
+		token:'',
+		uptoken:'',
+		imagekey:'',
+		imagekey1:'',//用来没有保存的情况下替换图片时用的，删除之前的图片
+
+
+		goodsName:'',
+		goodsDesc:'',
+		goodsPrice:'',
+		oldPrice:'',
+		goodsId:'',
+	}
+
+	onLoad(option){
+		console.log(wepy.getStorageSync("goodMsg"))
+		if(option.type==1 && wepy.getStorageSync("goodMsg")!=undefined && wepy.getStorageSync("goodMsg")!=null){
+			let goodMsg = wepy.getStorageSync("goodMsg")
+			this.goodsName = goodMsg.fName
+			this.goodsDesc = goodMsg.fGoodsNote
+			this.goodsPrice = goodMsg.fBaseAmount
+			this.oldPrice = goodMsg.fOldPrice
+			this.imageURL = goodMsg.fGoodsImg
+			this.goodsId = goodMsg.fGoodsId
+			this.categoryId = goodMsg.fGoodsListId
+			if(this.imageURL!=''){
+				this.isImage = true
+			}
+		}
+		this.token = wepy.getStorageSync(TOKEN)||{};
+		this.shopId = wepy.getStorageSync(SHOPID)||{};
+		console.log("type=======",option.type)
+		if(option.type==0){
+			this.type="商品添加";
+		}else if(option.type==1){
+			this.type="商品编辑";
+		}
+		this.getCategoryList();
+	}
+
+	//页面卸载
+	onUnload(){
+		//没有保存并且有图片上传
+		if(this.type==0 && !this.isGoodsSave && this.imageURL!=''){
+			this.onDelImage()
+		}
+	}
+
+	async onSaveGoods(e){
+		let that = this;
+		
+		let goodsName = e.detail.value.goodsName;
+		let goodsPrice = e.detail.value.goodsPrice;
+		let oldPrice = e.detail.value.oldPrice;
+		if(oldPrice==''||oldPrice==null){
+			oldPrice = 0
+		}
+
+		let goodsDesc = e.detail.value.goodsDesc;
+		let categoryId = this.categoryId;
+		let type_id = this.type_id;
+		let pic = this.imageURL;
+		console.log("form===",categoryId,goodsName,goodsPrice,pic);
+		if(categoryId==''||goodsName == '' || goodsPrice == ''||pic == ''){
+			tip.toast("信息填写不完整！");
+			return;
+		}
+
+		let json={};
+
+		if(this.type == '商品添加'){
+			//商品添加
+			json = await api.addGoods({
+				query:{
+					token:that.token,
+					fShopId:that.shopId,
+					fGoodsListId:categoryId,
+					fName:goodsName,
+					fGoodsImg:pic,
+					fGoodsNote:goodsDesc,
+					fBaseAmount:parseFloat(goodsPrice),
+					fOldPrice:parseFloat(oldPrice),
+					fLabel:type_id,
+					fStatus:1,
+				},
+				method:'POST'
+			});
+		}else{
+			//商品编辑
+		
+		json = await api.updateGoods({
+			query:{
+				token:that.token,
+				data:{
+					fShopId:that.shopId,
+					fGoodsId:that.goodsId,
+					fGoodsListId:categoryId,
+					fName:goodsName,
+					fGoodsImg:pic,
+					fGoodsNote:goodsDesc,
+					fBaseAmount:parseFloat(goodsPrice),
+					fOldPrice:parseFloat(oldPrice),
+					fLabel:type_id,
+					fStatus:1,
+				}
+			},
+			method:'POST'
+		});
+		}
+
+		console.log("saveGoods==",json);
+		if(json.data.code==0){
+			tip.toast("保存信息成功,请设置商品规格");
+			this.isGoodsSave = true;
+
+			this.goodsName=''
+			this.goodsDesc=''
+			this.goodsPrice=''
+			this.oldPrice=''
+		}else{
+			tip.toast("网络连接失败!");
+		}
+		this.$apply();
+
+	}
+
+	async getCategoryList(){
+			let that = this;
+			const json = await api.getCategory({
+				query:{
+					fShopId:this.shopId
+				}
+			})
+			console.log(json);		
+			if(json.data.code == 0){
+				this.categoryList = json.data.data;
+			}else{
+				tip.error(json.data.msg);
+				return;
+			}
+			for(let i =0;i<that.categoryList.length;i++){
+				that.category.push(that.categoryList[i].fListName);
+				if(this.type=='商品编辑' && that.categoryList[i].fListId == that.categoryId){
+					this.index = i
+					break
+				}
+			}
+			if(this.categoryId == ''){
+				this.categoryId = this.categoryList[0].fListId;
+			}
+			console.log("category===",that.category,this.index);
+			this.$apply();
+		}
+
+	async onDelImage(){
+		const json = await api.delImage({
+			query:{
+				token:this.token,
+				fImageName:this.imagekey1
+			},
+			method:'POST'
+		})
+		console.log("onDelImage===",json);
+	}
+
+		bindCategoryPickerChange(e){
+			this.index = e.detail.value;
+			this.categoryId = this.categoryList[this.index].fListId;
+			console.log("bindCategoryPickerChange==",this.index);
+		}
+
+		bindTypePickerChange(e){
+			this.type_index = e.detail.value;
+			if(this.type_index==0){
+				this.type_id = null
+			}
+			this.type_id = this.type_index;
+			console.log("bindTypePickerChange==",this.type_index);
+		}
+
+	methods = {
+		//选择照片并上传照片
+		onUploadImage(){
+			let that = this;
+			wx.chooseImage({
+				count:1,
+				success:function(res){
+				console.log(res)
+ 				var timestamp = (new Date()).getTime()
+      			that.imagekey = that.shopId.toString() + '/image/' + timestamp + res.name					
+					var tempFilePath = res.tempFilePaths[0];
+					upload.upload(that.token,tempFilePath,(res)=>{
+						if(that.imageURL!=''){
+							//执行删除图片接口
+							that.onDelImage()
+						}
+						that.imageURL = res.imageURL
+						if(that.imageURL!=''){
+							that.isImage = true;
+							that.imagekey1 = that.imagekey
+						}
+						that.$apply()
+					},(error)=>{
+						console.log('error:'+error);
+					},{
+						region:'SCN',
+						domain:'https://image.leadnexus.net',
+						key:that.imagekey,
+						uptokenURL:'https://www.leadnexus.net/wechat/auth/uptoken/'
+						// uptoken:that.uptoken
+					},(res)=>{
+						console.log('上传进度',res.progress);
+						console.log('已经上传的数据长度',res.totalBytesSent);
+						console.log("上传结果:",res);
+					})
+				}
+			});
+			console.log("上传后的imageUrl：",that.imageURL);
+		},
+
+	}
+
+
+}
+</script>

@@ -1,0 +1,109 @@
+<style lang="less">
+@import "./styles/base";
+@import "./styles/icon";
+@import "./styles/style";
+
+</style>
+
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/home',
+      'pages/orderList',
+      'pages/personalCenter',
+      'pages/address',
+      'pages/foodMenuParce',
+      'pages/foodMenuOrder',
+      'pages/commitOrder',
+      'pages/orderDetail',
+      'pages/subscribe',
+    ],
+    subPackages:[
+      {
+        root:'packageA',
+        name:'packA',
+        pages:[
+          'pages/list',
+          'pages/indepos',
+          'pages/consult',
+          'pages/adminHome',
+          'pages/adminProManager',
+          'pages/adminProDetailManager',
+          'pages/adminProDetailAttrManager',       
+          'pages/adminOrderManager',
+          'pages/adminOrderDetail',
+          'pages/adminLogin',
+          'pages/custcoupons',
+          'pages/shopcoupons',
+          'pages/thome',
+        ]
+      }
+    ],
+   window: {
+      backgroundTextStyle: 'dark',
+      navigationBarBackgroundColor: '#FFFFFF',
+      navigationBarTitleText: 'WeChat',
+      navigationBarTextStyle: 'black',
+      enablePullDownRefresh: false,
+      backgroundColor: '#ffffff'
+    },
+    "tabBar": {
+      "color": "#999999",
+      "selectedColor": "#333333",
+      "borderStyle": "white",
+      "backgroundColor": "#f8f7fc",
+        "list": [{
+        "pagePath": "pages/home",
+        "text": "首页",
+        "iconPath": "images/icon_home.png",
+        "selectedIconPath": "images/icon_home_select_black.png"
+      },{
+        "pagePath":"pages/orderList",
+        "text":"订单",
+        "iconPath": "images/icon_order.png",
+        "selectedIconPath":"images/icon_order_select_black.png"
+      },{
+        "pagePath":"pages/personalCenter",
+        "text":"我的",
+        "iconPath": "images/icon_my.png",
+        "selectedIconPath": "images/icon_my_select_black.png"       
+      }]
+    }
+  }
+
+  globalData = {
+    appId: 'wx27b5d7e06dbe2064',
+    hostUrl : '',
+    version : 1.1
+  }
+
+  constructor () {
+    super()
+    this.use('requestfix')
+    this.use('promisify');
+  }
+
+  onLaunch(option) {
+    let that = this
+    wx.showShareMenu({
+    })
+    wx.getSystemInfo({
+      success(res){
+        console.log('getSystemInfo===',res)
+        if(res.platform == 'devtools'){
+          that.globalData.hostUrl = 'https://debug.leadnexus.net/wechat'
+        }else{
+          that.globalData.hostUrl = 'https://www.leadnexus.net/wechat'
+        }
+      },
+      fail(res){
+        console.log('getSystemInfo,fail==',res) 
+        that.globalData.hostUrl = 'https://www.leadnexus.net/wechat'
+      }
+    })
+  }
+}
+</script>

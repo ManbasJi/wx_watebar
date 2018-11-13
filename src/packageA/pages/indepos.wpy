@@ -1,0 +1,421 @@
+<template>
+<view class="account-container">
+			<text class="text1">当前帐号</text>
+			<text class="bind-text">{{bindText}}</text>
+			<text class="opt-button" @tap="onAccountOpts">{{accountBindStatus==0?'绑定':'修改'}}</text>
+		</view>	
+	<view class="top-container">
+		<text class="text1">当前余额：</text>
+		<text class="text2">{{depos}}</text>
+	</view>
+	<view class="middle-container">
+		<view class="text1">充值金额</view>
+		<input type="number" name="" bindinput="onInputDepos"/>
+		<view class="text-tip" wx:if="{{isGiven}}">充值{{inputDepos}} 送{{givenM}}</view>
+		<view wx:if="{{isShowRules}}" class="text2">充值规则</view>
+		<repeat wx:if="{{isShowRules}}" for="{{deposRules}}" key="index" index="index" item="item">
+			<view class="item">充 {{item.fAmountMin}} - {{item.fAmountMax}} 送 {{item.fGivenMoney}}</view>
+		</repeat>
+	</view>
+	<view class="bottom-container">
+		<button @tap="startInputDepos">立即充值</button>
+	</view>
+
+			<!-- 弹出框 -->
+	<view class="modal-mask" catchtouchmove="preventTouchMove" wx:if="{{isShowModal}}"></view>
+	<view class="modal-dialog" wx:if="{{isShowModal}}">
+		<view class="title">绑定帐号</view>
+		<view class="content">
+			<view class="input_text">
+				<input placeholder="填写要绑定的手机号" value="{{inputAccount}}" bindinput="onInputFinsh" type="text" />
+			</view>
+		</view>
+		<view class="footer">
+			<view class="btn-cancel" @tap="onCancel" data-status="cancel">关闭</view>
+			<view class="btn-save" @tap="onSave" data-status="save">保存</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	import wepy from 'wepy' 
+	import { SHOPID,CUSTID,ORDER_COUPON,OPENID,TOKEN } from '@/utils/constant'
+	import api from '@/api/api'
+	import tip from '@/utils/tip'
+	import util from '@/utils/util'
+	export default class Indepos extends wepy.page{
+		config = {
+			navigationBarTitleText:'充值'
+		}
+
+		data = {
+			deposRules:[],
+			couponsDataList:[],
+			shopId:'',
+			custId:'',
+			token:'',
+			openId:'',
+			type:'',
+			payM:0,
+			countDepos:0,
+			givenM:0,
+			inputDepos:0,
+			isGiven:false,
+			depos:0,
+			bindText:'',
+			accountBindStatus:0, // 0 未绑定、1 已经绑定
+			isShowModal: false,
+			isShowRules:false,
+			inputAccount:'',
+		}
+
+		onLoad(opts){
+			this.token = wepy.getStorageSync(TOKEN)
+			this.shopId = wepy.getStorageSync(SHOPID)||null
+			this.custId = wepy.getStorageSync(CUSTID)
+			this.openId = wepy.getStorageSync(OPENID)||{};
+			this.depos = opts.depos
+			this.getRules()
+			this.getDeposPhone()
+		}
+
+		onInputFinsh(e){
+			this.inputAccount = e.detail.value
+		}
+
+		async getRules(){
+			const json  = await api.getDeposRules({
+				query:{
+					fShopId:this.shopId
+				}
+			})
+			console.log('getRules===',json)
+			if(json.data.code==0){
+				if(json.data.data[0].result == -1){
+					this.isShowRules = false
+				}else{
+					this.isShowRules = true
+				}
+				this.deposRules = json.data.data
+			}
+			this.$apply()
+		}
+
+		async getDeposPhone(){
+			const json = await api.getDeposPhone({
+				query:{
+					fCustId:this.custId
+				},
+				method:'POST'
+			})
+			console.log('getDeposPhone===',json)
+			if(json.data.code==0&&json.data.data[0].result != -1){
+				this.bindText = json.data.data[0].fPhone
+				this.inputAccount = json.data.data[0].fPhone
+				this.accountBindStatus = 1
+			}else{
+				this.bindText = '未绑定'
+				this.accountBindStatus = 0
+			}
+			this.$apply()
+		}
+
+		async updateDeposPhone(phone){
+			const json = await api.upDeposPhone({
+				query:{
+					fCustId:this.custId,
+					fPhone:phone
+				},
+				method:'POST'
+			})
+			console.log('updateDeposPhone===',json)
+			if(json.data.code == 0){
+				if(json.data.data[0].result==-2){
+					tip.toast('手机号码已存在')
+					return
+				}else{
+					tip.toast('保存成功')
+					this.bindText = phone
+				}
+			}else{
+				tip.toast('保存失败')
+			}
+			this.isShowModal = false
+			this.$apply()
+		}
+
+	async onGetDepos(){
+		const json = await api.getDeposApi({
+			query:{
+				fShopId:this.shopId,
+				fCustId:this.custId
+			}
+		})
+		console.log('onGetDepos===',json)
+		if(json.data.code == 0){
+			this.depos = json.data.data[0].fAmount
+		}
+		this.$apply()
+	}			
+
+		onInputDepos(e){
+			this.inputDepos = parseFloat(e.detail.value)
+			for(let i = 0,j=this.deposRules.length;i<j;i++){
+				if(this.deposRules[i].fAmountMin <= this.inputDepos && this.inputDepos <= this.deposRules[i].fAmountMax){
+					this.givenM = this.deposRules[i].fGivenMoney
+					break
+				}else{
+					this.givenM = 0
+				}
+			}
+			if(this.givenM == 0){
+				this.isGiven = false
+			}else{
+				this.isGiven = true
+			}
+			console.log('输入的金额与赠送的金额===',this.inputDepos,this.givenM)
+		}
+
+				// 微信支付接口
+		onWxPay(params){
+			let that = this
+			this.pre_pay_id = params.package.split('=')[1]
+			wx.requestPayment({
+				'appId':params.appId,
+				'timeStamp':params.timeStamp,
+				'nonceStr':params.nonceStr,
+				'package':params.package,
+				'signType':params.signType, // HMAC-SHA256和MD5
+				'paySign':params.sign,
+				'success':function(res){
+					// 支付调用成功
+					console.log(res)
+				},
+				'fail':function(res){
+					// 支付调用失败
+					console.log(res)
+				},
+				'complete':function(res){
+					// 支付调用结束（成功或失败都会执行）
+					console.log(res)
+					if(res.errMsg == 'requestPayment:ok'){
+						tip.toast('支付成功')
+						that.onGetDepos()
+					}else{
+						tip.toast('支付失败')
+					}
+				}
+			})
+		}
+
+		methods = {
+			async startInputDepos(){
+				if(this.inputDepos < 1 || this.inputDepos == ''){
+					tip.toast('充值金额不能小于1元')
+					return
+				}
+				let orderNo = 'CZ'+util.getTimeStamp();
+				const json = await api.inputDepos({
+					query:{
+						token:this.token,
+						fOrderNo:orderNo,
+						fCustId:this.custId,
+						fShopId:this.shopId,
+						fPhone:this.inputAccount,
+						fAmount:this.inputDepos,
+						fRemark:"手机充值",
+						fOpenId:this.openId,
+						fTotalFee:this.inputDepos*100,
+						fIP:'192.168.1.12'
+					},
+					method:'POST'
+				})
+				console.log('支付充值产品',json)
+				if(json.data.code==0){	
+					this.onWxPay(json.data.data)
+				}else{
+					tip.toast('网络连接失败，请稍后再试')
+				}
+			},
+			onAccountOpts(){
+				this.isShowModal = true
+				if(this.accountBindStatus == 1){
+					this.inputAccount = this.bindText
+				}
+			},
+			onCancel(){
+				this.isShowModal = false
+			},
+			onSave(){
+				this.updateDeposPhone(this.inputAccount)
+			}
+		}
+	}
+</script>
+
+<style lang="less">
+	.top-container{
+		margin-top:10rpx;
+		width:100%;
+		height:150rpx;
+		text-align:center;
+		line-height:150rpx;
+		background:#fff;
+		.text1{
+			font-size:32rpx;
+			color:#999;
+		}
+		.text2{
+			font-size:45rpx;
+			color:#333;
+		}
+
+	}
+	.bottom-container{
+		position:fixed;
+		bottom:80rpx;
+		width:100%;
+		button{
+			width:80%;
+			height:80rpx;
+			line-height:80rpx;
+			background:#e51c23;
+			font-size:36rpx;
+			color:#fff;
+
+		}
+	}
+	.middle-container{
+		width:100%;
+		background:#fff;
+		margin-top:10rpx;
+		padding-top:30rpx;
+		padding-bottom:30rpx;
+		input{
+			width:80%;
+			height:80rpx;
+			line-height:80rpx;
+			margin:30rpx auto;
+			margin-bottom:18rpx;
+			border:1rpx solid #e84e40;
+			border-radius:8rpx;
+			padding-left:20rpx;
+		}
+		.text1{
+			font-size:32rpx;
+			color:#000;
+			margin-left:30rpx;
+		}
+		.text-tip{
+			font-size:28rpx;
+			color:#e84e40;
+			width:80%;
+			margin:0rpx auto;
+		}
+		.text2{
+			font-size:32rpx;
+			color:#000;
+			margin-left:30rpx;
+			margin-top:50rpx;
+		}
+		.item{
+			margin-top:30rpx;
+			margin-left:30rpx;
+		}
+	}
+	.account-container{
+		text-align:left;
+		width:100%;
+		height:80rpx;
+		line-height:80rpx;
+		background:#fff;
+		padding-left:30rpx;
+		margin-bottom:2rpx;
+		margin-top:8rpx;
+		.text1{
+			font-size:32rpx;
+			color:#333;
+		}
+		.bind-text{
+			margin-left:30rpx;
+			font-size:32rpx;
+			color:#666;
+		}
+		.opt-button{
+			font-size:32rpx;
+			color:#333;
+			text-decoration:underline;
+			float:right;
+			margin-right:50rpx;
+		}
+	}
+
+	.modal-mask {
+		width:100%;
+		height:100%;
+		position:fixed;
+		top: 0;
+		left:0;
+		background: #666;
+		opacity: 0.5;
+		overflow: hidden;
+		z-index: 9000;
+	}
+	.modal-dialog{
+		width: 540rpx;
+		overflow:hidden;
+		position:fixed;
+		top:40%;
+		left:0;
+		z-index:9999;
+		background:#f9f9f9;
+		margin: -180rpx 105rpx;
+		border-radius: 36rpx;
+	.title{
+  	padding-top:50rpx;
+  	font-size:36rpx;
+  	color:#333;
+  	text-align:center;
+  }
+}
+
+  .content{
+  	padding: 50rpx 32rpx;
+  	.input_text{
+  		display: flex;
+  		background:#fff;
+  		border:2rpx solid #ddd;
+  		border-radius:4rpx;
+  		font-size:28rpx;
+  		input{
+  			width:100%;
+  			height:82rpx;
+  			font-size:32rpx;
+  			line-height:28rpx;
+  			padding: 0 20rpx;
+  			box-sizing:border-box;
+  			color:#333;
+  		}
+  	}
+	}
+	.footer{
+  	height:86rpx;
+  	line-height:86rpx;
+  	border-top:1rpx solid #dedede;
+  	font-size:34rpx;
+  	.btn-cancel{
+  		float:left;
+  		width:50%;
+  		color:#333;
+  		text-align:center;
+  		margin-top:0.5rpx;
+  	}
+  	.btn-save{
+  		float:left;
+  		width:50%;
+  		color:#333;
+  		margin-top:1rpx;
+  		text-align:center;
+  	}
+  }
+</style>

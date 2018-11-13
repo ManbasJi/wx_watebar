@@ -1,0 +1,192 @@
+<template>
+	<view class="authorize_container">
+		<image class="authorize-icon" src="../images/authorize.png"></image>
+		<view class="auth-item">申请获取以下权限：</view>
+		<view class="auth-item">获取你的公开信息（头像、昵称等）</view>
+		<view class="btn-authorize">
+			<button open-type="getUserInfo" type="primary" lang="zh_CN" bindgetuserinfo="onGotUserInfo">授权</button>
+		</view>
+	</view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import util from '@/utils/util';
+import {
+	SYSTEM_INFO,
+	USER_SPECICAL_INFO,
+	USER_INFO,
+	TOKEN,
+	CUSTID,
+	OPENID,
+	SHOPID,
+	APPID
+} from '@/utils/constant';
+export default class Authrorize extends wepy.page{
+	config = {
+		navigationBarTitleText: '授权登录',
+	}
+
+	data = {
+		AppId:'wx4be2dc8c4a4b6e60',
+		uuid:'b9cabeab53a92e90',
+		addressX:0,
+		nickName:'',
+		openUserId:161104,
+		taskId:0,		addressY:0
+	}
+
+	async onLoad(){
+			wx.getLocation({
+				success:function(res){
+					that.addressX = res.longitude
+					that.addressY = res.latitude
+				}
+			})			
+		// wx.removeStorageSync(TOKEN)
+		let that = this;
+		//判断用户是否配置设置
+		let resSetting = await wepy.getSetting();
+		console.log(resSetting)
+		if(wepy.getStorageSync(USER_INFO)||null !=null){
+			console.log("执行isToken");
+			that.isToken();
+		}
+	}
+
+	async wxlogin(){
+		let reslogin = await wepy.login();
+		console.log("wxcode:");
+		console.log(reslogin.code);
+		// tip.toast("进入了wxlogin")
+		if(reslogin.errMsg == "login:ok"){
+			if(this.nickName == ''){
+				this.nickName = wepy.getStorageSync(USER_INFO).nickName||'blank'
+			}
+			// tip.toast("开始调用wxlogin")
+			const json = await api.sendWxCode({
+				query:{
+					code:reslogin.code,
+					fAppId:this.AppId,
+					fPhone:null,
+					fType:1,
+					fAddressX:this.addressX,
+					fAddressY:this.addressY,
+					fNickName:this.nickName
+				},
+				method:'POST'
+			})
+			console.log("发送wxcode请求......");
+			console.log(json);
+			if(json.data.code == 0){
+					//保存token到本地
+					wepy.setStorageSync(TOKEN,json.data.token);//
+					wepy.setStorageSync(CUSTID,json.data.data.fId);
+					wepy.setStorageSync(OPENID,json.data.data.openId);
+					wepy.setStorageSync(SHOPID,json.data.data.fShopId);
+					wepy.setStorageSync(APPID,'wx4be2dc8c4a4b6e60')
+					console.log(json.data.data.fShopId[0])
+					//用户有注册
+					wepy.switchTab({
+						url:'/pages/zlhome'
+					})
+				}else{
+					//重新调用登录功能
+					let res = await wepy.showModal({
+						title: '获取token失败',
+						cotent: '登录失败'
+					})
+					if(res.confirm){
+						wepy.switchTab({
+							url: '/pages/zlhome'
+						})
+					}
+				}	
+			}
+		}
+
+	async isToken(){
+		let that = this;
+		var token = wepy.getStorageSync(TOKEN);
+		if(token==undefined || token==''){
+			//token为空，重新调用获取token接口
+			that.wxlogin();
+		}else{
+			//token有值存在
+			let json = await api.checkToken({
+				query:{
+					token:token
+				},
+			})
+			console.log("执行token接口");
+			console.log(json);	
+			if(json.data.code == 0){
+				wepy.switchTab({
+					url:'/pages/zlhome'
+				})
+			}else{
+				// tip.toast("token验证失败")	
+				//token过期，重新请求token
+				that.wxlogin();
+			}
+		}
+	}
+
+	async onGotUserInfo(e){
+		let that = this;
+		if(e.detail.errMsg == 'getUserInfo:ok'){
+			let res = await wepy.login();
+			console.log("用户登录信息:");
+			console.log(res);
+			// tip.toast("用户登录信息")
+			if(res.code){
+				console.log(e.detail);
+				// 存储用户信息到本地
+				wepy.setStorageSync(USER_INFO,e.detail.userInfo);
+				that.nickName = e.detail.userInfo.nickName
+				let systemInfo = wepy.getSystemInfoSync();
+				// 存储系统信息到本地
+				wepy.setStorageSync(SYSTEM_INFO,systemInfo);
+				// wepy.switchTab({
+				// 	url:'/pages/home'
+				// })
+				// tip.toast("即将进入isToken")
+				that.isToken();
+			}
+		}
+	}
+
+	methods = {
+
+	}
+}
+</script>
+<style lang="less">
+page{
+	height:100%;
+}
+
+.authorize-container{
+	height: 100%;
+	background: #000;
+	text-align: center;
+	padding-top: 100rpx;
+}
+.authorize-icon{
+	width: 128rpx;
+	height: 128rpx;
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 10rpx;
+}
+.auth-item{
+	font-size: 32rpx;
+	padding: 5rpx 0;
+	text-align: center;
+}
+.btn-authorize{
+	margin: 100rpx 50rpx;
+}
+</style>

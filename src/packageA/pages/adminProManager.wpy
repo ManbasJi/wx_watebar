@@ -1,0 +1,326 @@
+	<style lang="less">
+	page{
+		background:#f2f2f2;
+	}
+	.top_container{
+		background:#fff;
+		width:100%;
+		height:100rpx;
+		line-height:100rpx;
+		border-top:1rpx solid #cdcdcd;
+		padding:0rpx 20rpx;  
+		.category_picker{
+			font-size:28rpx;
+			color:#666;
+			float:left;
+		}
+		.iconfont{
+			float:left;
+			margin-left:10rpx;
+			margin-right:20rpx;
+		}
+		.search_inpput{
+			width:60%;
+			height:60rpx;
+			font-size:28rpx;
+			color:#666;
+			padding:0rpx 10rpx;
+			margin-top:20rpx;
+			margin-left:20rpx;
+			border:1rpx solid #cdcdcd;
+			border-radius:5rpx;
+		}
+	}
+	.middle_container{
+		margin-top:20rpx;
+	}
+	.pro_list{
+		background:#fff;
+		margin-top:20rpx;
+		padding:25rpx 25rpx;
+		height:170rpx;
+		.list_top{
+			height:130rpx;
+		}
+		.goodsPic{
+			width:120rpx;
+			height:120rpx;
+			float:left;
+			margin-right:20rpx;
+			border-radius:10rpx;
+		}
+		.goodsName{
+			font-size:28rpx;
+			color:#333;
+		}
+		.list_footer{
+
+		}
+		.btn_status{
+			float:right;
+			width:80rpx;
+			height:40rpx;
+			line-height:40rpx;
+			text-align:center;
+			border:1rpx solid #cdcdcd;
+			font-size:24rpx;
+			color:#999;
+		}
+		.btn_attr{
+			float:right;
+			width:110rpx;
+			height:40rpx;
+			line-height:40rpx;
+			text-align:center;
+			border:1rpx solid #cdcdcd;
+			font-size:24rpx;
+			color:#999;
+			margin-right:20rpx;
+		}
+		.btn_delete{
+			float:right;
+			width:80rpx;
+			height:40rpx;
+			line-height:40rpx;
+			text-align:center;
+			border:1rpx solid #cdcdcd;
+			font-size:24rpx;
+			color:#999;
+			margin-left:20rpx;
+		}
+	}
+	.addPro{
+		position:fixed;
+		width:80rpx;
+		height:80rpx;
+		line-height:80rpx;
+		background:#ffc400;
+		border-radius:360rpx;
+		text-align:center;
+		font-size:40rpx;
+		z-index:9999;
+		bottom:40rpx;
+		right:40rpx;
+		color:#fff;
+		font-weight:600;
+	}
+</style>
+
+<template>
+	<view class="top_container">
+			<picker bindchange="bindCategoryChangePicker" value="{{index}}" range="{{category}}">
+				<view class="category_picker">
+					{{category[index]}}
+				</view>
+			</picker>
+			<i class="iconfont icon-arrowdown"></i>
+			<input class="search_inpput" type="text" name="search_text" confirm-type="search" placeholder="搜索商品名称" bindinput="getSearchContent" bindblur="searchLoseFocus" />
+	</view>
+	<view class="middle_container" > 
+		<repeat for="{{goodsData}}" key="index" index="index" item="item">
+			<view class="pro_list" @tap="goProDetail" data-item="{{item}}">
+				<view class="list_top">
+					<image class="goodsPic" mode="aspectFill" src="{{item.fGoodsImg}}"></image>
+					<view class="goodsName">{{item.fName}}</view>
+				</view>
+				<view class="list_footer">
+					<view class="btn_delete" data-id="{{item.fGoodsId}}" @tap.stop="optionDelGoods" data-index="{{index}}">删除</view>
+					<view class="btn_status" @tap.stop="optionStatus" data-id="{{item.fGoodsId}}" data-status="1" wx:if="{{item.fStatusCode==0}}" data-index="{{index}}">上架</view>
+					<view class="btn_status" @tap.stop="optionStatus" data-id="{{item.fGoodsId}}" data-status="0" wx:if="{{item.fStatusCode==1}}" data-index="{{index}}">下架</view>
+					<view class="btn_attr" @tap.stop="goAttr" data-id="{{item.fGoodsId}}"  data-index="{{index}}">规格管理</view>					
+				</view>
+			</view> 
+		</repeat>
+	</view>
+	<view class="addPro" @tap="addPro">+</view>
+
+
+</template>
+
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import{
+	SYSTEM_INFO,
+	ACTIVE_CODE,
+	ATTR_ACTIVE_CODE,
+	SHOP_CART,
+	SHOPID,
+	TOKEN
+} from '@/utils/constant'
+
+import tip from '@/utils/tip'
+export default class AdminProManager extends wepy.page{
+
+	config = {
+		navigationBarTitleText:'商品管理'
+	}
+
+	data = {
+		shopId:'',
+		token:'',
+		index:0,
+		category:[],
+		categoryList:[],
+		categoryId:'',
+		goodsData:[],
+		categoryId:0,
+		searchContent:'',
+	}
+
+	async onUpdateStatus(goodsId,status,index){
+		const json  = await api.updateGoodsStatus({
+			query:{
+				token:this.token,
+				fGoodsId:goodsId,
+				fStatus:status,
+			},
+			method:'POST'
+		})
+		console.log("onUpdateStatus===",json);
+		if(json.data.code==0){
+			this.goodsData[index].fStatusCode = parseInt(status);
+			tip.toast("更新商品状态成功!");
+		}
+		this.$apply();
+	}
+
+	async onDelGoods(goodsId,index){
+		const json = await api.delGoods({
+			query:{
+				token:this.token,
+				fGoodsId:goodsId
+			},
+			method:'POST'
+		})
+		console.log("onDelGoods===",json);
+		if(json.data.code==0){
+			this.goodsData.splice(index,1);
+			tip.toast("删除成功!");
+		}
+		this.$apply();
+	}
+
+	bindCategoryChangePicker(e){
+		console.log("bindPickerChange");
+		let index = e.detail.value;
+		this.index = index;
+		if(index == 0){
+			index = ''
+		}else{
+			index = this.categoryList[index-1].fListId;
+		}
+		this.categoryId = index;
+		this.getFoodListMsg();
+	}
+
+	getSearchContent(e){
+		console.log("getSearchContent");
+		this.searchContent = e.detail.value;
+	}
+
+	searchLoseFocus(e){
+		console.log("searchLoseFocus");
+		this.searchContent = e.detail.value;
+		this.getFoodListMsg();
+	}
+
+	methods = {
+		optionDelGoods(e){
+			let that = this;
+			let id = e.currentTarget.dataset.id;
+			let index = e.currentTarget.dataset.index;
+			console.log("optionDelGoods===");
+			wx.showModal({
+        	title: '',
+        	content: '您是否要删除该商品',
+        	showCancel: true,
+        	success: res => {
+          	if (res.confirm) {
+  				that.onDelGoods(id,index);
+          	} else if (res.cancel) {
+
+          	}
+        	},
+        	fail: res => {
+
+        	}
+     		});			
+		},
+		optionStatus(e){
+			let status = e.currentTarget.dataset.status;
+			let id = e.currentTarget.dataset.id;
+			let index = e.currentTarget.dataset.index;
+			console.log(id,status,index)
+			this.onUpdateStatus(id,status,index);
+			
+		},
+		goProDetail(e){
+			wepy.setStorageSync('goodMsg',e.currentTarget.dataset.item)
+			wx.navigateTo({
+				url:'adminProDetailManager?type=1'
+			})
+		},
+		addPro(e){
+			wx.navigateTo({
+				url:'adminProDetailManager?type=0'
+			})			
+		},
+		goAttr(e){
+			let id = e.currentTarget.dataset.id;
+			wx.navigateTo({
+				url:'adminProDetailAttrManager?goodsId='+id
+			})
+		}
+	}
+
+	onLoad(){
+		this.shopId = wepy.getStorageSync(SHOPID)||{};
+		this.token = wepy.getStorageSync(TOKEN)||{};
+		this.getCategoryList();
+	}
+
+	async getCategoryList(){
+			let that = this;
+			const json = await api.getCategory({
+				query:{
+					fShopId:that.shopId
+				}
+			});
+			console.log(json);		
+			if(json.data.code == 0){
+				this.categoryList = json.data.data;
+			}else{
+				tip.error(json.data.msg);
+				return;
+			}
+			for(let i =0;i<that.categoryList.length;i++){
+				if(i==0)that.category.push('全部');
+				that.category.push(that.categoryList[i].fListName);
+			}
+			this.getFoodListMsg(null);
+			console.log("category===",that.category);
+			this.$apply();
+		}
+
+	async getFoodListMsg(categoryId){
+		let that = this;
+			const json = await api.getShopGoods({
+				query:{
+					fShopId:that.shopId,
+					fGoodsListId:that.categoryId,
+					fGoodsName:that.searchContent,
+					fGoodsId:''
+				}
+			});
+			console.log("goodsData===",json);
+			if(json.data.code == 0){
+				this.goodsData = json.data.data;
+			}else{
+				tip.error(json.data.msg);
+				return;
+			}
+			this.$apply();
+		}
+}
+</script>

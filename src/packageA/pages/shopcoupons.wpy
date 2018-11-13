@@ -1,0 +1,212 @@
+<template>
+	<scroll-view scroll-y="true" style="height:90%;">
+			<view class="container">
+    	<view class="coupons-list">
+    	<repeat for="{{couponDataList}}" key="index" index="index" item="item">
+      <view class="coupons-item" @tap="onToCommitOrder" data-id="{{item.fId}}">
+        <view class="money-left">{{item.fPrice}}<text>元</text></view>
+        <view class="money-right">
+          <view class="money-name">满减优惠券</view>
+          <view class="money-hold">满{{item.fAmount}}元使用</view>
+        </view>
+        <form data-item="{{item}}" bindsubmit = "onCatchCoupon" report-submit="true">
+        	<button formType = "submit" class="money-home">领取</button>
+        </form>
+        <view class="money-line"></view>
+        <view class="money-fooder">
+          有效期7天
+        </view>
+      </view>
+    </repeat>
+    </view>
+		</view>
+		</scroll-view>	
+</template>
+
+<script>
+	import wepy from 'wepy' 
+	import { SHOPID,CUSTID,TOKEN } from '@/utils/constant'
+	import api from '@/api/api'
+	import util from '@/utils/util'
+	import tip from '@/utils/tip'
+	export default class Custcoupons extends wepy.page{
+		config = {
+			navigationBarTitleText:'可领取优惠券'
+		}
+
+		data = {
+			couponDataList:[],
+			shopId:'',
+			custId:'',
+			token:'',
+		}
+
+		onLoad(){
+			this.shopId = wepy.getStorageSync(SHOPID)
+			this.custId = wepy.getStorageSync(CUSTID)
+			this.token = wepy.getStorageSync(TOKEN)
+			
+		}
+
+		onShow(){
+			this.getShopCouponsList()
+		}
+
+
+	async onSaveFormId(formId){
+		const json = await api.saveFormId({
+			query:{
+				fId: null,
+				fShopId: this.shopId,
+				fCustId: this.custId,
+				fFormId: formId,
+				fTimeStamp:util.getTimeStamp()
+			},
+			method:'POST'
+		})
+		console.log('onSaveFormId===',json)
+	}
+
+	async getShopCouponsList(){
+		const json = await api.getShopCouponList({
+			query:{
+				fShopId:this.shopId
+			}
+		})
+		console.log('getShopCouponList===',json)
+		if(json.data.code == 0 && json.data.data[0].result!=-1){
+			this.couponDataList = json.data.data
+			this.$apply()
+		}else{
+
+		}
+	}
+
+	async reviceCoupon(couponId,startDate,endDate){
+		const json = await api.receiveCoupon({
+			query:{
+				token:this.token,
+				fShopId:this.shopId,
+				fCouponId:couponId,
+				fNum:1,
+				fCustId:this.custId,
+				fBegDate:startDate,
+				// fEndDate:endDate,
+				fDaysNum:0,
+				fStatus:1,
+				fUse:0,
+			},
+			method:'POST'
+		})
+		console.log("reviceCoupon===",json)
+		if(json.data.code == 0 ){
+			tip.toast('领取成功')
+		}else{
+			tip.toast(json.data.msg)
+		}
+	}
+
+		methods = {
+			onCatchCoupon(e){
+				let formId = e.detail.formId
+				this.onSaveFormId(formId)
+				let couponId = e.target.dataset.item.fCouponId
+				this.reviceCoupon(couponId,util.getCurrentTime(),util.addDate(util.getCurrentTime(),7))				
+			}
+		}
+	}
+</script>
+
+<style lang="less">
+	.coupon-item{
+		width:80%;
+		height:100rpx;
+		padding:20rpx 20rpx;
+		margin:0 auto;
+	}
+	.btn_catch{
+		float:right;
+		width:20%;
+		height:100rpx;
+		line-height:100rpx;
+		text-align:center;
+		background:#ffc400;
+		color:#333;
+		border-radius:5rpx;
+		box-shadow:1px 1px 1px 1px #cdcdcd;
+	}
+
+	.coupons-list {
+  width: 92%;
+  padding-top: 10px;
+  margin: 0 auto;
+  margin-bottom: 50px;
+}
+
+.coupons-item {
+  color: #fff;
+  font-size: 30rpx;
+  background: linear-gradient(to right, #eb7073, #f4948a);
+  margin-bottom: 10px;
+  padding-top: 10px;
+  border-radius: 5px;
+  position: relative;
+}
+
+.money-left {
+  width: 120px;
+  font-size: 60rpx;
+  margin: 10px 0px;
+  display: inline-block;
+  text-align: center;
+  color:#fff;
+}
+
+.money-left text {
+  font-size: 28rpx;
+  padding-left: 6px;
+}
+
+.money-right {
+  margin: 12px 0px;
+  display: inline-block;
+}
+
+.money-name {
+  font-size: 30rpx;
+  color:#fff;
+}
+
+.money-hold {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.money-home {
+  display: inline-block;
+  float: right;
+  margin: 18px 0px;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #e65e5f;
+  font-size: 25rpx;
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-right: 10px;
+}
+
+.money-line {
+  background-image: url(https://cdn.it120.cc/apifactory/2018/03/07/10164d7252e986ba85b372a99fd353c0.png);
+  height: 4px;
+  width: 100%;
+  background-size: 10px 5px;
+}
+
+.money-fooder {
+  background-color: rgba(0, 0, 0, 0.08);
+  font-size: 26rpx;
+  padding: 8px 10px;
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+</style>

@@ -1,0 +1,15 @@
+{
+	"description": "A WePY project",
+	"setting": {
+		"urlCheck": false,
+		"es6": false,
+		"postcss": false,
+		"minified": true,
+		"newFeature": true
+	},
+	"compileType": "miniprogram",
+	"appid": "wx4be2dc8c4a4b6e60",
+	"projectname": "restaurant_xj",
+	"miniprogramRoot": "dist/",
+	"condition": {}
+}

@@ -1,0 +1,227 @@
+<template>
+	<!-- <view class="top-box" @tap="onShopCoupons">领取优惠券</view> -->
+	<image @tap="onShopCoupons" style="width:100%;height:250rpx;" src="http://opmzmyurr.bkt.clouddn.com/%E4%BC%98%E6%83%A0%E5%88%B8bg.png" mode="aspectFill"></image>
+
+
+	<view class="container">
+    <view class="coupons-list">
+    	<repeat for="{{couponsDataList}}" key="index" index="index" item="item">
+      <view class="coupons-item" @tap="onToCommitOrder" data-item="{{item}}">
+        <view class="money-left">{{item.fAccountPrice}}<text>元</text></view>
+        <view class="money-right">
+          <view class="money-name">满减优惠券</view>
+          <view class="money-hold">满{{item.fAmount}}元使用</view>
+        </view>
+        <view @tap.stop="onToHome" class="money-home">去使用</view>
+        <view class="money-line"></view>
+        <view class="money-fooder">
+          {{item.fEndDate}}前有效
+        </view>
+      </view>
+    </repeat>
+    </view>
+	</view>
+</template>
+
+<script>
+	import wepy from 'wepy' 
+	import { SHOPID,CUSTID,ORDER_COUPON } from '@/utils/constant'
+	import api from '@/api/api'
+	import tip from '@/utils/tip'
+	export default class Custcoupons extends wepy.page{
+		config = {
+			navigationBarTitleText:'优惠券'
+		}
+
+		data = {
+			couponsDataList:[],
+			shopId:'',
+			custId:'',
+			type:'',
+			baseAmount:0, // 订单基本价格
+		}
+
+		onLoad(opts){
+			if(opts.type=='order'){
+				// 提交订单跳转过来的
+				this.type = 'order'
+				this.baseAmount = opts.allamount
+			}
+			this.shopId = wepy.getStorageSync(SHOPID)
+			this.custId = wepy.getStorageSync(CUSTID)
+		}
+
+		onShow(){
+			this.getCustCouponsList()
+		}
+
+		async getCustCouponsList(){
+			const json = await api.getCustCouponList({
+				query:{
+					fShopId:this.shopId,
+					fCustId:this.custId
+				}
+			})
+			console.log('getCustCouponsList===',json)
+			if(json.data.code == 0 && json.data.data[0].result!=-1){
+				this.couponsDataList = json.data.data
+				for(var i = 0,len = this.couponsDataList.length;i<len;i++){
+					this.couponsDataList[i].fEndDate=this.couponsDataList[i].fEndDate.replace("T"," ")
+				}
+				this.$apply()
+			}else{
+
+			}
+		}
+
+		methods = {
+			onToCommitOrder(e){
+				if(this.type!='order'){
+					return
+				}
+				let item = e.currentTarget.dataset.item
+				console.log(e)
+				if(item.fAmount<=this.baseAmount){
+					// 优惠券满减大于等于订单基本金额
+					wepy.setStorageSync(ORDER_COUPON,item)
+				}else{
+					tip.toast('订单不可使用该优惠券')
+					return
+				}
+   	   			wx.navigateBack({
+        			delta: 1
+      			})
+			},
+			onShopCoupons(e){
+				wx.navigateTo({
+					url:'/packageA/pages/shopcoupons'
+				})
+			},
+			onToHome(){
+				if(this.type == 'order'){
+					return
+				}
+				wepy.switchTab({
+					url:'/pages/home'
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="less">
+	.top-box{
+		width:100%;
+		height:70rpx;
+		line-height:70rpx;
+		background:#ffc400;
+		text-align:center;
+		color:#333;
+	}
+	.list-item{
+		width:90%;
+		height:120rpx;
+		background:#fff;
+		border-radius:8rpx;
+		box-shadow:1px 1px 1px 1px #cdcdcd;
+		margin:10rpx auto;
+		padding:15rpx;
+	}
+	.item-text1{
+		float:left;
+		font-size:48rpx;
+		color:red;
+		font-weight:600;
+		margin-left:20rpx;
+		margin-top:30rpx;
+	}
+	.item-text2{
+		font-size:30rpx;
+		color:#666;
+		margin-top:30rpx;
+	}
+	.item-text3{
+		font-size:25rpx;
+		color:#666;
+		margin-top:8rpx;
+	}
+
+
+.container {
+}
+
+.coupons-list {
+  width: 92%;
+  padding-top: 10px;
+  margin: 0 auto;
+  margin-bottom: 50px;
+}
+
+.coupons-item {
+  color: #fff;
+  font-size: 30rpx;
+  background: linear-gradient(to right, #eb7073, #f4948a);
+  margin-bottom: 10px;
+  padding-top: 10px;
+  border-radius: 5px;
+  position: relative;
+}
+
+.money-left {
+  width: 120px;
+  font-size: 60rpx;
+  margin: 10px 0px;
+  display: inline-block;
+  text-align: center;
+  color:#fff;
+}
+
+.money-left text {
+  font-size: 28rpx;
+  padding-left: 6px;
+}
+
+.money-right {
+  margin: 12px 0px;
+  display: inline-block;
+}
+
+.money-name {
+  font-size: 30rpx;
+  color:#fff;
+}
+
+.money-hold {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.money-home {
+  display: inline-block;
+  float: right;
+  margin: 18px 0px;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #e65e5f;
+  font-size: 25rpx;
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-right: 10px;
+}
+
+.money-line {
+  background-image: url(https://cdn.it120.cc/apifactory/2018/03/07/10164d7252e986ba85b372a99fd353c0.png);
+  height: 4px;
+  width: 100%;
+  background-size: 10px 5px;
+}
+
+.money-fooder {
+  background-color: rgba(0, 0, 0, 0.08);
+  font-size: 26rpx;
+  padding: 8px 10px;
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+</style>

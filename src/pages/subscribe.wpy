@@ -1,0 +1,223 @@
+<template>
+	<form bindsubmit="formSubmit">
+		<view class="content_box">
+			<view class="border_bottom">
+				<text>姓名</text><span>*</span>
+				<input name="name"></input>
+			</view>
+			<view class="border_bottom">
+				<text>手机号</text><span>*</span>
+				<input name="phone"></input>
+			</view>
+			<view class="border_bottom">
+			<text>日期</text><span>*</span>
+  			<picker mode="date" value="{{date}}" start="2018-01-01" end="2028-12-31" bindchange="bindDateChange">
+    		<view class="picker">
+      			{{date}}
+    		</view>
+  			</picker>
+  			</view>
+			<view class="border_bottom">
+			<text>时间</text><span>*</span>  						
+  			<picker mode="time" value="{{time}}" start="09:01" end="23:01" bindchange="bindTimeChange">
+    		<view class="picker">
+      			{{time}}
+    		</view>
+  			</picker>
+  			</view>
+			<view class="border_bottom">
+				<text>人数</text><span>*</span>
+				<input name="num"></input>
+			</view>
+			<view class="tip"></view>
+		</view>
+		<view class="bottom_box">
+			<!-- <button class="btn_submit" formType="submit" data-status="1">直接提交</button> -->
+			<button class="btn_order" formType="submit" data-status="2">点菜</button>
+		</view>
+	</form>
+
+</template>
+
+<style lang="less">
+	page{
+		background:#fff
+	}
+	.content_box{
+		padding-left:50rpx;
+		padding-right:50rpx;
+		view{
+			width:100%;
+			height:100rpx;
+			line-height:100rpx;
+			margin-top:20rpx;
+		}
+		text{
+			font-size:30rpx;
+			color:#666;
+			float:left;
+		}
+		input{
+			position:relative;
+			width:60%;
+			height:60rpx;
+			top:20rpx;
+			left:20rpx;
+		}
+		span{
+			float:left;
+			color:red;
+			margin-left:10rpx;
+		}
+		.tip{
+			width:100%;
+			text-align:center;
+		}
+		.picker{
+			position:relative;
+			width:60%;
+			height:60rpx;
+			top:20rpx;
+			left:20rpx;
+			line-height:60rpx;			
+		}
+	}
+	.btn_submit{
+		width:40%;
+		height:80rpx;
+		line-height:80rpx;
+		color:#333;
+		background:#fff;
+		border:1rpx solid #ffc400;
+		float:left;
+		margin-left:5%;
+		font-size:35rpx;
+	}
+
+	.btn_order{
+		width:80%;
+		color:#333;
+		background:#ffc400;
+		height:80rpx;
+		line-height:80rpx;
+		font-size:38rpx;
+	}
+</style>
+
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import util from '@/utils/util';
+import{
+	TOKEN,
+	SHOPID,
+	CUSTID,
+	RECORD_BASE_MSG
+} from '@/utils/constant'
+export default class Subscribe extends wepy.page{
+	config = {
+		navigationBarTitleText:'预约',
+	}
+
+	components = {
+
+	}
+
+	data = {
+		date:'',
+		time:'',
+	}
+
+	onLoad(){
+		var datetime = util.getCurrentTime().split(" ");
+		console.log(datetime)
+		this.date = datetime[0];
+		this.time = datetime[1];
+	}
+
+	bindDateChange(e){
+		this.date = e.detail.value;
+	}
+
+	bindTimeChange(e){
+		this.time = e.detail.value;
+	}
+
+  async formSubmit(e){
+		console.log("formSubmit",e.detail.value);
+		if(e.detail.value.name == ''){
+			tip.toast("姓名不能为空");
+			return;
+		}
+		if(e.detail.value.phone == ''){
+			tip.toast("手机号不能为空");
+			return;
+		}
+		if(this.date == ''){
+			tip.toast("到店日期不能为空");
+			return;
+		}
+		if(this.time == ''){
+			tip.toast("到店时间不能为空");
+			return;
+		}		
+		if(e.detail.value.num == ''){
+			tip.toast("到店人数不能为空");
+			return;
+		}
+		console.log(e)
+		if(e.detail.target.dataset.status == '1'){
+			this.onSub(e)
+		}else{
+			let time = this.date+' '+this.time
+			e.detail.value.time = time
+			wepy.setStorageSync(RECORD_BASE_MSG,e.detail.value)
+			wepy.navigateTo({
+				url:'foodMenuOrder?type='+3
+			})
+		}
+		
+	}
+
+	async onSub(e){
+		let token = wepy.getStorageSync(TOKEN)||{};
+		let shopId = wepy.getStorageSync(SHOPID)||{};
+		let custId = wepy.getStorageSync(CUSTID)||{};
+		let supplyDate = (util.getCurrentTime().split(" "))[0];
+		let date = this.date+' '+this.time;
+		let name = e.detail.value.name;
+		let phone = e.detail.value.phone;
+		let time = this.time;
+		let num = e.detail.value.num;
+		let remark = e.detail.value.remark;
+		const json  = await api.submitRecord({
+			query:{
+				token:token,
+				fShopId:shopId,
+				fDate:supplyDate,
+				fDateTime:date,
+				fPhone:phone,
+				fCustName:name,
+				fPeopleNum:num,
+				fTableNum:'',
+				fCustId:custId,
+				fStatus:0
+			},
+			method:'POST'
+		});
+		console.log("用户提交预约表单===",json);
+		if(json.data.code==0){
+			tip.toast("提交预约成功!");
+			wx.navigateBack({
+  				delta: 1
+			})
+		}
+	}
+
+	methods={
+
+	}
+} 
+
+</script>

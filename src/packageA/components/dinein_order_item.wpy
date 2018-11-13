@@ -1,0 +1,258 @@
+<style lang="less">
+  .order_list_top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 0px solid #ffc400;
+    .type{
+    	font-size:28rpx;
+    	color:#999;
+    }
+    .status{
+    	font-size:28rpx;
+    	color:#999;
+    }
+  }
+  .order_list_fdate{
+    padding-bottom: 26rpx;
+    border-bottom: 1px solid #efefef;
+    font-size:28rpx;
+    color:#999;  	
+  }
+  .order_list_content{
+  	width:100%;
+  	border-bottom: 1px solid #efefef;
+  	.goods_list{
+  		background:#f2f2f2;
+  		padding:10rpx 20rpx;
+  	}
+  	.goods_name{
+  		color:#666;
+  		font-size:28rpx;
+  	}
+  	.goods_num{
+  		color:#666;
+  		float:right;
+  		font-size:28rpx;
+  	}
+  	 .pro_total{
+  		width:100%;
+  		text-align:right;
+		margin:15rpx 0rpx;
+		font-size:30rpx;
+		color:#666;  	
+  	}
+  }
+  .order_list_footer {
+    display: flex;
+    flex-direction:row;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding-top: 20rpx;
+    .option_btn{
+    	width:150rpx;
+    	height:50rpx;
+    	line-height:50rpx;
+    	text-align:center;
+    	border:1rpx solid #cdcdcd;
+    	border-radius:20rpx;
+    	font-size:28rpx;
+    	margin-left:20rpx;
+    }
+    .print_btn{
+    	width:150rpx;
+    	height:50rpx;
+    	line-height:50rpx;
+    	text-align:center;
+    	border:1rpx solid #cdcdcd;
+    	border-radius:20rpx;
+    	font-size:28rpx;
+    	margin-left:20rpx;
+    	background:#ffc400
+    }
+  }
+
+  .list {
+    background: #fff;
+    padding: 30rpx;
+    margin-top: 15rpx;
+  }
+
+</style>
+<!-- 堂吃订单列表item -->
+<template>
+	<view class="order_item">
+		<!-- <view wx:for="{{orderList}}" wx:for-item="item" wx:key="index"> -->
+		<repeat for="{{orderList}}" key="index" index="index" item="item">
+			<view class="list">
+				<view class="item_content" @tap="navigatorOrderDetail" data-index="{{index}}" data-item="{{item}}">
+					<view class="order_list_top">
+						<text class="type">{{item.fType==0?'堂食：'+item.fOrderNo:'外卖：'+item.fOrderNo}}</text>
+						<text class="status" wx:if="{{item.fStatus==0}}">待支付</text>
+						<text class="status" wx:if="{{item.fStatus==1}}">已付款，待确认</text>
+						<text class="status" wx:if="{{item.fStatus==6}}">已确认，待上菜</text>
+						<text class="status" wx:if="{{item.fStatus==4}}">已完成</text>
+						<text class="status" wx:if="{{item.fStatus==5}}">已取消</text>
+					</view>
+					<view class="order_list_fdate">
+						<text>时间：{{item.fDate}}</text>
+					</view>
+					
+					<view class="order_list_content">
+						<repeat for="{{item.goodsData}}">
+							<view class="goods_list" wx:key="index">
+								<text class="goods_name">{{item.name}}</text>
+								<text class="goods_num">x{{item.num}}</text>
+							</view>
+						</repeat>
+						<view class="pro_total">
+							共{{item.fUnionNum}}件商品
+							合计:￥{{item.fAllAmount}}
+							<text wx:if="{{item.fPayType==1}}">(微信支付)</text>
+							<text wx:if="{{item.fpayType==0}}">(现金支付)</text>
+						</view>				
+					</view>
+					<!-- 用户端 type==1-->
+					<view class="order_list_footer" wx:if="{{type==1}}">
+						<view class="option_btn" id="btn_pay" wx:if="{{item.fStatus==0&&item.fPayType==1}}" data-optstatus="1" data-item="{{item}}" data-index="{{index}}" @tap.stop="payMoney">
+							立即支付
+						</view>
+						<view class="option_btn" id="btn_cancel" wx:if="{{item.fStatus==0}}" data-optstatus="5" data-item="{{item}}" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							取消订单
+						</view>						
+					</view>
+					<!-- 商户端 type==0-->
+					<view class="order_list_footer" wx:if="{{type==0}}">
+						<view class="option_btn" id="btn_pay" wx:if="{{item.fStatus==0&&item.fPayType==0}}" data-optstatus="6" data-item="{{item}}" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							已支付
+						</view>						
+						<view class="option_btn" id="btn_pay" wx:if="{{item.fStatus==1}}" data-optstatus="6" data-item="{{item}}" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							确认订单
+						</view>
+						<view class="option_btn" id="btn_cancel" wx:if="{{item.fStatus==6}}" data-optstatus="4" data-item="{{item}}" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							完成
+						</view>						
+					</view>
+					<view class="order_list_footer" wx:if="{{type==0}}">
+						<view class="print_btn" data-item="{{item}}" data-index="{{index}}" @tap.stop="printOrderMsg">
+							打印单据
+						</view>							
+					</view>
+				</view>
+			</view>			
+		</repeat>
+		<!-- </view> -->
+	</view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import tip from '@/utils/tip'
+import api from '@/api/api'
+import {
+	ORDER_DETAIL,
+	TOKEN,
+	SHOPID
+} from '@/utils/constant'
+export default class dineinOrderItem extends wepy.component{
+	props = {
+		orderList:{
+			default:[{
+				style:0
+			},{
+				style:0
+			}],
+			type:Object
+		},
+		type:{
+
+		}	
+	}
+
+	data = {
+		url:'',
+		token:'',
+	}
+
+	onLoad(){
+	}
+
+
+
+
+	methods = {
+
+	async printOrderMsg(e){
+		let item = e.currentTarget.dataset.item;
+		console.log("printOrderMsg,item",item)
+		// let index = e.currentTarget.dataset.index;
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)
+		let orderNo = item.fOrderNo
+		const json = await api.printOrderMsg({
+			query:{
+				token:this.token,
+				fShopId:this.shopId,
+				fOrderNo:orderNo
+			}
+		})
+		console.log("printOrderMsg===",json)
+		if(json.data.code==0){
+			tip.toast('打印成功')
+		}
+	},
+
+		//调起支付接口，支付成功订单状态变为已完成
+		async payMoney(e){
+
+		},
+
+		refreshList(val){
+			if(val == undefined)return;
+			this.orderList = val;
+			console.log("val....",this.orderList);
+			this.$apply();
+		},
+
+		async updateOrderStatus(e){
+			let that = this;
+			let item = e.currentTarget.dataset.item;
+			let index = e.currentTarget.dataset.index;
+			let optstatus = e.currentTarget.dataset.optstatus;
+			const json = await api.updateOrderStatus({
+				query:{
+					token:that.token,
+					fOrderId:item.fOrderId,
+					fStatus:optstatus
+				},
+				method:'POST'
+			});
+			console.log("updateOrderStatus===",json);
+			if(json.data.code==0){
+				that.orderList[index].fStatus = optstatus;
+			}
+			this.$apply();
+		},
+
+		navigatorOrderDetail(e){
+			let index = e.currentTarget.dataset.index;
+			let that = this;
+			wepy.setStorageSync(ORDER_DETAIL,that.orderList[index]);
+			if(this.type==1){
+    			wx.navigateTo({
+    				url: '/pages/orderDetail?orderListItem='+ that.orderList[index]
+    			});	
+			}else{
+    			wx.navigateTo({
+    				url: '/packageA/pages/adminOrderDetail?orderListItem='+ that.orderList[index]
+    			});	
+			}			
+		}
+	}
+
+	onLoad(){
+		this.token = wepy.getStorageSync(TOKEN)||{};
+	}
+}
+</script>
+

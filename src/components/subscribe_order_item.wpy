@@ -1,0 +1,449 @@
+<style lang="less">
+	.subscribe_item{
+
+		.list_item{
+			background:#fff;
+			padding:30rpx;
+			margin-top:15rpx;
+			.orderType{
+				font-size:30rpx;
+				color:#999;
+				margin-bottom:10rpx;
+				background:#f2f2f2;
+				padding:10rpx;
+			}
+			.status{
+				font-size:28rpx;
+				color:#999;
+				float:right;
+				margin-top:-52rpx;
+				margin-right:10rpx;
+			}
+			.name{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+			}
+			.phone{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+			}
+			.date{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+			}
+			.time{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+			}
+			.num{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+			}
+			.remark{
+				font-size:28rpx;
+				color:#666;
+				margin-top:10rpx;
+				padding-bottom:10rpx;
+				border-bottom:1rpx solid #cdcdcd; 
+			}
+			.option{
+				float:right;
+				padding:8rpx 6rpx;
+				border:1rpx solid #cdcdcd;
+				border-radius:10rpx;
+				margin-top:10rpx;
+				font-size:28rpx;
+			}
+		}
+  		.order_list_footer {
+  			width:100%;
+  			height:70rpx;
+  		  	.option_btn{
+  		  		width:150rpx;
+  		  		height:50rpx;
+  		  		line-height:50rpx;
+  		  		text-align:center;
+  		  		border:1rpx solid #cdcdcd;
+  		  		border-radius:20rpx;
+  		  		font-size:28rpx;
+  		  	}
+  		  	    .print_btn{
+    	width:150rpx;
+    	height:50rpx;
+    	line-height:50rpx;
+    	text-align:center;
+    	border:1rpx solid #cdcdcd;
+    	border-radius:20rpx;
+    	font-size:28rpx;
+    	margin-left:20rpx;
+    	background:#ffc400
+    }
+  		}
+	}
+
+</style>
+
+<template>
+	<view class="subscribe_item">
+		<repeat for="{{subscribeList}}" key="index" index="index" item="item">
+			<view class="list_item" @tap="onToOrderDetail" data-item="{{item}}">
+				<view class="orderType" wx:if="{{item.fOrderNo==null}}">订单类型：无点单</view>
+				<view class="orderType" wx:if="{{item.fOrderNo!=null}}">订单类型：有点单</view>
+				<view class="status" wx:if="{{item.fOrderNo==null&&item.fReStatus==-1}}">状态：已取消</view>
+				<view class="status" wx:if="{{item.fOrderNo==null&&item.fReStatus==0||item.fOrderNo==null&&item.fReStatus==null}}">状态：预约中</view>
+				<view class="status" wx:if="{{item.fOrderNo==null&&item.fReStatus==1}}">状态：已到店</view>
+				<view class="status" wx:if="{{item.fOrderNo!=null&&item.fStatus==0}}">状态：待支付</view>
+				<view class="status" wx:if="{{item.fOrderNo!=null&&item.fStatus==1}}">状态：已支付</view>
+				<view class="status" wx:if="{{item.fOrderNo!=null&&item.fStatus==7}}">状态：已到店</view>
+				<view class="status" wx:if="{{item.fOrderNo!=null&&item.fStatus==5}}">状态：已取消</view>			
+				<view class="status" wx:if="{{item.fOrderNo!=null&&item.fStatus==4}}">状态：已完成</view>	
+				<view class="name" wx:if="{{item.fOrderNo!=null}}">订单号：{{item.fOrderNo}}</view>			
+				<view class="name">姓名：{{item.fCustName}}</view>
+				<view class="phone">手机号码：{{item.fPhone}}</view>
+				<view class="date">下单日期：{{item.fDate}}</view>
+				<view class="time">预约时间：{{item.fDateTime}}</view>
+				<view class="num">人数：{{item.fPeopleNum}}</view>
+				<!-- <text class="option">取消预约</text> -->
+				<view class="order_list_footer" wx:if="{{item.fOrderNo==null&&item.fReStatus==0}}">
+					<view class="option_btn" id="btn_pay" data-item="{{item}}" data-id="{{item.fId}}" data-status="-1" data-index="{{index}}" @tap.stop="onUpdateStatus">取消预约</view>
+					<view class="option_btn" wx:if="{{type==0}}" data-item="{{item}}" id="btn_pay" data-id="{{item.fId}}" data-status="1" data-index="{{index}}" @tap.stop="onUpdateStatus">到店</view>
+				</view>	
+				<view class="order_list_footer" wx:if="{{item.fOrderNo!=null}}">
+					<view class="option_btn" data-id="{{item.fOrderId}}" data-item="{{item}}" wx:if="{{type==1&&item.fStatus==0}}" data-status="1" data-index="{{index}}" @tap.stop="payMoney">立即支付</view>	
+					<view class="option_btn" data-id="{{item.fOrderId}}" data-item="{{item}}" wx:if="{{type==0&&item.fStatus==1}}" data-status="5" data-index="{{index}}" @tap.stop="onUpdateOrderStatus">取消预约</view>					
+					<view class="option_btn" data-id="{{item.fOrderId}}" data-item="{{item}}" wx:if="{{type==0&&item.fStatus==1}}" data-status="7" data-index="{{index}}" @tap.stop="onUpdateOrderStatus">到店</view>
+					<view class="option_btn" data-id="{{item.fOrderId}}" data-item="{{item}}" wx:if="{{type==0&&item.fStatus==7}}" data-status="4" data-index="{{index}}" @tap.stop="onUpdateOrderStatus">完成</view>
+				</view>
+				<view class="order_list_footer" wx:if="{{type==0&&item.fOrderNo!=null}}">
+						<view class="print_btn" data-item="{{item}}" data-index="{{index}}" @tap.stop="printOrderMsg">
+							打印单据
+						</view>							
+				</view>		
+			</view>
+		</repeat>
+	</view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import api from '@/api/api'
+import tip from '@/utils/tip'
+import {TOKEN,SHOPID,APPID,ORDER_DETAIL,OPENID,CUSTID,MEMNUM,TEMP_ID} from '@/utils/constant'
+export default class subscribeOrderItem extends wepy.component{
+	props = {
+		subscribeList:{
+
+		},
+		type:{
+
+		}
+	}
+
+	data = {
+		subscribeList:[],
+		pre_pay_id:'',
+		token:''
+	}
+
+		async getFormId(openId,params){
+			const json = await api.getFormId({
+				query:{
+					fOpenId:openId
+				}
+			})
+			console.log("getFormId===",json)
+			if(json.data.code==0){
+				let formId = json.data.data.fFormId
+				let appId = wepy.getStorageSync(APPID)||{}
+				this.sendModelMsg(appId,openId,formId,params)
+			}
+		}
+
+		async onSaveFormId(openId){
+			const json = await api.addFormId({
+				query:{
+					token:this.token,
+					fOpenId:openId,
+					fFormId:this.pre_pay_id
+				},
+				method:'POST'
+			})
+			console.log("onSaveFormId===",json)
+		}
+
+		async sendModelMsg(appId,openId,formId,params){ 
+			let templateId = wepy.getStorageSync(TEMP_ID) 
+			const json = await api.sendModelMsg({
+				query:{
+					token:this.token,
+					fAppId:appId,
+					data:{
+						touser:openId,
+						template_id:templateId,
+						form_id:formId,
+						page:'pages/home',
+						data:{
+							keyword1:{
+								value:params.orderNo
+							},
+							keyword2:{
+								value:'订单状态变动提醒'
+							},
+							keyword3:{
+								value:params.status
+							},
+							keyword4:{
+								value:params.date
+							},
+							keyword5:{
+								value:'无'
+							},
+							keyword6:{
+								value:params.note
+							},
+						}
+					}
+				},
+				method:'POST'
+			})
+			console.log("sendModelMsg===",json)
+		}
+
+
+	async printOrderMsg_S(orderNo){
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)
+		const json = await api.printOrderMsg({
+			query:{
+				token:token,
+				fShopId:shopId,
+				fOrderNo:orderNo
+			}
+		})
+		console.log("printOrderMsg===",json)
+		if(json.data.code == 0){
+			// tip.toast('打印成功')
+		}else{
+			tip.toast('打印失败，请稍后重试')
+		}
+	}
+
+	async onInsertIntegral(num){
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)	
+		let custId = wepy.getStorageSync(CUSTID)		
+		const json = await api.insertIntegral({
+			query:{
+				token:token,
+				fShopId:shopId,
+				fCustId:custId,
+				fIntNum:num.toFixed(0)
+			},
+			method:'POST'
+		})
+		console.log('onInsertIntegral===',json)
+	}
+
+				// 微信支付接口
+		onWxPay(params,orderNo,fId,allPrice,index,openId){
+			let that = this
+			this.pre_pay_id = params.package.split('=')[1]
+			wx.requestPayment({
+				'appId':params.appId,
+				'timeStamp':params.timeStamp,
+				'nonceStr':params.nonceStr,
+				'package':params.package,
+				'signType':params.signType, // HMAC-SHA256和MD5
+				'paySign':params.sign,
+				'success':function(res){
+					// 支付调用成功
+					console.log(res)
+				},
+				'fail':function(res){
+					// 支付调用失败
+					console.log(res)
+				},
+				'complete':function(res){
+					// 支付调用结束（成功或失败都会执行）
+					console.log(res)
+					if(res.errMsg == 'requestPayment:ok'){
+						that.onSaveFormId(openId)
+						tip.toast('支付成功')
+						that.subscribeList[index].fStatus = 1
+						that.printOrderMsg_S(orderNo)
+						//计算积分
+						let memNum = wepy.getStorageSync(MEMNUM)||null
+						if(memNum!=null && memNum!=undefined && memNum!=0){
+							let num = allPrice*parseFloat(memNum) 
+							console.log('计算之后的积分===',memNum,num)
+							that.onInsertIntegral(parseFloat(num))
+						}
+					}else{
+						tip.toast('支付失败')
+					}
+					that.$apply()
+				}
+			})
+		}
+
+	methods = {
+		refreshList(val){
+			if(val==undefined)return
+			this.subscribeList = val;
+			this.$apply()
+		},
+		async printOrderMsg(e){
+		let item = e.currentTarget.dataset.item;
+		let index = e.currentTarget.dataset.index;
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)
+		let orderNo = item.fOrderNo
+		const json = await api.printOrderMsg({
+			query:{
+				token:this.token,
+				fShopId:shopId,
+				fOrderNo:orderNo
+			}
+		})
+		console.log("printOrderMsg===",json)
+		if(json.data.code == 0){
+			tip.toast('打印成功')
+		}else{
+			tip.toast('打印失败，请稍后重试')
+		}
+	},
+
+			//调起支付接口，支付成功订单状态变为已完成
+		async payMoney(e){
+			let item = e.currentTarget.dataset.item
+			let shopId = wepy.getStorageSync(SHOPID)
+			let openId = wepy.getStorageSync(OPENID)
+			let token = wepy.getStorageSync(TOKEN)
+			let fCouponId = item.fCouponId
+			let index = e.currentTarget.dataset.index
+			const json = await api.afterPay({
+				query:{
+					token:token,
+					fShopId:shopId,
+					fIP:'192.168.1.12',
+					fOrderNo:item.fOrderNo,
+					fTotalFee:item.fAllAmount*100,
+					fOpenId:openId
+				},
+				method:'POST'
+			})
+			console.log('afterPay===',json)
+			if(json.data.code == 0){
+				this.onWxPay(json.data.data,item.fOrderNo,fCouponId,item.fAllAmount,index,openId)
+			}else{
+
+			}
+		},
+		async onCancelSub(e){
+			let id = e.currentTarget.dataset.id
+			let token = wepy.getStorageSync(TOKEN)||{}
+			const json = await api.cancelRecord({
+				query:{
+					token:token,
+					fId:id
+				},
+				method:'POST'
+			})
+			console.log("cancelRecord:",json)
+			if(json.data.code==0){
+				tip.toast("取消预约成功!")
+			}else{
+				tip.toast("取消预约失败!")
+			}
+		},
+		async onUpdateStatus(e){
+			let status = e.currentTarget.dataset.status
+			let index = e.currentTarget.dataset.index
+			let id = e.currentTarget.dataset.id
+			let item = e.currentTarget.dataset.item
+			let token = wepy.getStorageSync(TOKEN)||{}	
+			const json = await api.updateStatusRecord({
+				query:{
+					token:token,
+					fId:id,
+					fStatus:status
+				},
+				method:'POST'
+			})
+			console.log("onUpdateStatus",json)
+			if(json.data.code==0){
+				this.subscribeList[index].fReStatus = status
+				this.$apply()
+				if(this.type==1)return
+				let params = {}
+				if(status == -1){
+					params.status = '商家已取消预约'
+				}
+				params.orderNo = item.fDate
+				params.date = item.fDate
+				params.note = item.fPhone
+				this.getFormId(item.fOpenId,params)						
+			}
+		},
+
+		async onUpdateOrderStatus(e){
+			let orderId = e.currentTarget.dataset.id
+			let status = e.currentTarget.dataset.status
+			let token = wepy.getStorageSync(TOKEN)||{}	
+			let index = e.currentTarget.dataset.index
+			let item = e.currentTarget.dataset.item
+			const json = await api.updateRecordOrderStatus({
+				query:{
+					token:token,
+					fOrderId:orderId,
+					fStatus:status
+				},
+				method:'POST'
+			})
+			console.log("onUpdateOrderStatus",json)
+			if(json.data.code == 0){
+				this.subscribeList[index].fStatus = status
+				this.$apply()
+				if(this.type==1)return
+				let params = {}
+				if(status == 5){
+					params.status = '商家已取消预约'
+					params.orderNo = item.fOrderNo
+					params.date = item.fDate
+					params.note = item.fPhone
+					this.getFormId(item.fOpenId,params)	
+				}
+	
+			}
+		},
+
+		onToOrderDetail(e){
+			let item = e.currentTarget.dataset.item
+			if(item.fOrderNo!=null){
+				wepy.setStorageSync(ORDER_DETAIL,item);
+				if(this.type==1){
+    			wx.navigateTo({
+    				url: '/pages/orderDetail'
+    			});	
+				}else{
+    			wx.navigateTo({
+    				url: '/packageA/pages/adminOrderDetail'
+    			});	
+				}	
+			}
+		}
+
+	}
+
+	onLoad(){
+		console.log("subscirbe==",this.subscribeList);
+		this.token = wepy.getStorageSync(TOKEN)
+	}
+
+}
+</script>

@@ -1,0 +1,337 @@
+<template>
+		<view class="swpier-tab-pd">
+			<tab @currentTab.user="getCurrentTab" :tabList.sync="tabList" :currentTab.sync="currentTab"></tab>
+		</view>
+		<!-- <view class="scrollview" style="height:{{windowHeight-40}}px" > -->
+		<scroll-view scroll-y="true" class="swiper-item-box" bindscrolltoupper="onRefreshData" bindscrolltolower="onReachBottom" style="height:{{windowHeight-40}}px" >
+			<!-- 订单列表item -->
+			<!-- <orderItem :orderList.sync="orderList"></orderItem> -->
+			<dineinOrderItem :orderList.sync="orderList" :type.sync="type" wx:if="{{currentTab==0}}"></dineinOrderItem>
+			<parceOrderItem :orderList.sync="orderList" :type.sync="type" wx:if="{{currentTab==1}}">
+			</parceOrderItem>
+			<getFoodOrderItem :orderList.sync="orderList" :type.sync="type" wx:if="{{currentTab==2}}">
+			</getFoodOrderItem>
+			<subscribeOrderItem :subscribeList.sync="subscribeList" :type.sync="type" wx:if="{{currentTab==3}}"></subscribeOrderItem>
+			<!-- 暂无数据显示 -->
+			<placeholder wx:if="{{is_empty}}" :show.sync="is_empty" message="暂无发现数据"></placeholder>
+		</scroll-view>	
+		</view>
+</template>
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip'
+import{
+	SYSTEM_INFO,
+	USER_SPECICAL_INFO,
+	SHOPID,
+	CUSTID,
+	TOKEN
+} from '@/utils/constant';
+import Tab from '@/components/tab' //选项卡组件
+import DineinOrderItem from '@/components/dinein_order_item'//堂吃订单列表组件
+import ParceOrderItem from '@/components/parce_order_item'
+import SubscribeOrderItem from '@/components/subscribe_order_item'
+import GetFoodOrderItem from '@/components/getfood_order_item'
+// import OrderItem from '@/components/order_item' //订单列表组件
+import BottomLoadMore from '../components/common/bottomLoadMore' //底部加载更多组件
+import PlaceHolder from '../components/common/placeholder' //空列表显示组件
+export default class OrderList extends wepy.page{
+	config = {
+		navigationBarTitleText: '我的订单',
+	}
+	components = {
+		tab: Tab, 
+		// orderItem: OrderItem,s
+		bottomLoadMore: BottomLoadMore,
+		placeholder: PlaceHolder,
+		dineinOrderItem:DineinOrderItem,
+		parceOrderItem:ParceOrderItem,
+		subscribeOrderItem:SubscribeOrderItem,
+		getFoodOrderItem:GetFoodOrderItem
+	}
+	data = {
+		shopId:'',
+		custId:'',
+		token:'',
+		windowHeight: 0,
+		totalCount:0,//订单条目数
+		tabList:["堂食","外卖","自取","预约"],
+		orderList:[],//订单列表数据
+		subscribeList:[],
+		orderStatus: 0,//订单状态
+		currentTab: 0,
+		is_empty:true,
+		flag: 0,
+		//是否显示 底部loading
+		showLoading:false,
+		//防止重复加载
+		preventRepeatRequest: false,
+
+		hideRefresh: true,
+		hideLoadMore: true,
+		refreshTime: '',// 刷新时间
+		allPages: '',// 总页数
+		currentPage: 1,// 当前页数 默认是1
+		p_min: '',
+		p_max: '',
+
+		tanchiCount:'',
+		waimaiCount:'',
+		yuyueCount:'',
+		receiveFlg:0,
+		type:1,
+	}
+
+	/**
+	 * 获取预约订单
+	 */
+	async getSubscribeOrderList(P_Min,P_Max){
+		let that = this;
+		const json = await api.getRecordOrderList({
+			query:{
+				fCustId:that.custId,
+				fShopId:that.shopId,
+				fMin:P_Min,
+				fMax:P_Max
+			}
+		})
+		console.log("getSubscribeList===",json);
+		if(json.data.code == 0){
+			for(let i = 0;i<json.data.data.length;i++){
+				if(json.data.data[i].fDate!=null){
+					json.data.data[i].fDate = json.data.data[i].fDate.replace("T"," ");
+				}
+				json.data.data[i].fDateTime = json.data.data[i].fDateTime.replace("T"," ");
+			}
+			if(this.currentPage==1){
+				this.subscribeList = json.data.data
+			}else{
+				if(json.data.data.length == 0){
+					return
+				}else{
+					this.subscribeList = this.subscribeList.concat(json.data.data);
+				}
+			}
+			if(this.subscribeList.length==0){
+				this.is_empty = true;
+				return;
+			}else{
+				this.is_empty = false;
+			}
+		}else{
+			this.is_empty = false;
+		}
+		this.$invoke("subscribeOrderItem","refreshList",this.subscribeList)
+		this.$apply();
+	}
+
+	async getOrderMsg(fType,P_Min,P_Max){
+		let that = this;
+		that.p_min = P_Min;
+		that.p_max = P_Max;
+		const json = await api.getOrderList({
+			query:{
+				fShopId:that.shopId,
+				fCustId:that.custId,
+				fType:fType,
+				P_Min:P_Min,
+				P_Max:P_Max
+			}
+		});
+		console.log("getOrderMsg===",json)
+		if(json.data.code == 0){
+			if(json.data.data.length==1&&json.data.data[0].fOrderNo==null){
+				json.data.data = []
+			}
+			if(json.data.data.length == 0){
+				if(this.currentPage==1){
+						this.is_empty = true;
+						this.$apply();
+				}
+				return;
+			}else{
+				this.is_empty = false;
+			}
+			for(let i = 0; i<json.data.data.length;i++){
+				json.data.data[i].goodsData = [];
+				if(json.data.data[i].fUnionName == null){
+					continue;
+				}
+				let goodsAllMsg=json.data.data[i].fUnionName.split(",");
+				for(let j=0;j<goodsAllMsg.length;j++){
+					let goodsNameNum = goodsAllMsg[j].split("X");
+					let item = {};
+					item.name = goodsNameNum[0];
+					item.num = goodsNameNum[1];
+					json.data.data[i].goodsData.push(item);
+				}
+			}
+			if(that.currentPage == 1){
+				//刷新
+				that.orderList = json.data.data;
+				that.hideRefresh = true
+			}else{
+				//加载更多
+				that.hideLoadMore = true
+				if(json.data.data.length == 0){
+					return
+				}
+				this.orderList = this.orderList.concat(json.data.data);
+				console.log("加载更多===",this.orderList)
+			}
+		}
+		if(fType==0){
+			this.$invoke("dineinOrderItem","refreshList",this.orderList)
+		}else{
+			this.$invoke("parceOrderItem","refreshList",this.orderList)
+		}
+		that.$apply();
+	}
+
+	async updateOrderStatus(orderId,status){
+		let that = this;
+		const json = await api.updateOrderStatus({
+			query:{
+				token:that.token,
+				fOrderId:orderId,
+				fStatus:status
+			},
+			method:'POST'
+		});
+		console.log("updateOrderStatus===",json);
+		if(json.data.code==0){
+			console.log();
+		}
+	}
+
+	/**
+	 * 上拉加载
+	 */
+	onReachBottom(e){
+		console.log("上拉加载",e)
+		let that = this
+		setTimeout(function(){
+			that.currentPage ++
+			that.p_min += 9
+			that.p_max += 9
+			if(that.orderStatus !== 3){
+				that.getOrderMsg(that.orderStatus,that.p_min,that.p_max)
+			}else{
+				that.getSubscribeOrderList(that.p_min,that.p_max)
+			}						
+		},300)
+	}
+
+	/**
+	 * 下拉刷新
+	 */
+	onRefreshData(e){
+		console.log("下拉刷新",e)
+		let that = this
+		setTimeout(function(){
+			that.currentPage = 1
+			that.p_min = 0
+			that.p_max = 9
+			if(that.orderStatus !== 3){
+				that.getOrderMsg(that.orderStatus,that.p_min,that.p_max)
+			}else{
+				that.getSubscribeOrderList(that.p_min,that.p_max)
+			}
+		},300)
+	}
+
+	onLoad(){
+		let systemInfo = wx.getStorageSync(SYSTEM_INFO);			
+		if(systemInfo==null||systemInfo==""||systemInfo==undefined){
+			systemInfo = wepy.getSystemInfoSync();
+       		wepy.setStorageSync(SYSTEM_INFO, systemInfo);						
+		}
+		this.windowHeight = systemInfo.windowHeight;
+		console.log("windowHeight=====");
+		console.log(this.windowHeight);	
+		this.shopId = wepy.getStorageSync(SHOPID)||{};
+		this.custId = wepy.getStorageSync(CUSTID)||{};
+		this.token = wepy.getStorageSync(TOKEN)||{};
+		this.getOrderMsg(0,0,9)
+	}
+
+	onShow(){
+		// this.getOrderMsg(0,0,9);
+	}
+
+	computed = {
+
+	}
+
+	methods = {
+		getCurrentTab(cur, evt){	
+			this.currentPage = 1;
+			this.page_total = 0;
+			this.orderList = [];
+			this.p_min = 0
+			this.p_max = 9
+
+			let that = this;
+			that.currentTab = cur;
+			console.log("cur");
+			console.log(cur);
+			if(cur == 0){
+				console.log("堂食订单");
+				that.orderStatus = 0;
+				that.getOrderMsg(0,0,9);
+			} else if (cur == 1){
+				console.log("外卖订单");
+				that.orderStatus = 1;
+				that.getOrderMsg(1,0,9);
+			} else if (cur == 2){
+				console.log("自取订单");
+				that.orderStatus = 2
+				that.getOrderMsg(2,0,9)
+			}else if (cur == 3){
+				console.log("预订订单");
+				that.orderStatus = 3;
+				that.getSubscribeOrderList(0,9);
+			}
+			that.$apply();
+		},
+
+		/**
+		 * 滑动切换tab
+		 */
+		bindChange(e){
+			let that = this;
+			that.currentTab = e.detail.current;
+			console.log("change tab....."+e.detailcurrent)
+			that.$apply();
+		}
+	}
+	events = {
+		//刷新你
+		refreshOrderList(msg){
+			console.log("msg值:"+msg);
+		}
+	}
+	watch = {
+		currentTab(val){
+			console.log("currentTab====="+val)
+		}
+	}
+}
+</script>
+
+<style lang="less">
+	.swpier-tab-pd{
+		position:fixed;
+		top:0rpx;
+		left:0rpx;
+		right:0rpx;
+		padding:0 30rpx;
+		height:80rpx;
+		background: #fff;
+		z-index:999;
+	}
+	.swiper-item-box{
+		margin-top:80rpx;
+	}
+</style>

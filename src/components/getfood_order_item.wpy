@@ -1,0 +1,442 @@
+
+<style lang="less">
+  .order_list_top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    .type{
+    	font-size:28rpx;
+    	color:#999;
+    }
+    .status{
+    	font-size:28rpx;
+    	color:#999;
+    }
+  }
+  .order_list_content{
+  	width:100%;
+  	border-bottom: 1px solid #efefef;
+  	.goods_list{
+  		background:#f2f2f2;
+  		padding:10rpx 20rpx;
+  	}
+  	.goods_name{
+  		color:#666;
+  		font-size:28rpx;
+  	}
+  	.goods_num{
+  		color:#666;
+  		float:right;
+  		font-size:28rpx;
+  	}
+  	 .pro_total{
+  		width:100%;
+  		text-align:right;
+		margin:15rpx 0rpx;
+		font-size:30rpx;
+		color:#666;  	
+  	}
+  }
+  .order_list_footer {
+    display: flex;
+    flex-direction:column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding-top: 20rpx;
+    .option_btn{
+    	width:150rpx;
+    	height:50rpx;
+    	line-height:50rpx;
+    	text-align:center;
+    	border:1rpx solid #cdcdcd;
+    	border-radius:20rpx;
+    	font-size:28rpx;
+    }
+    .print_btn{
+    	width:150rpx;
+    	height:50rpx;
+    	line-height:50rpx;
+    	text-align:center;
+    	border:1rpx solid #cdcdcd;
+    	border-radius:20rpx;
+    	font-size:28rpx;
+    	margin-left:20rpx;
+    	background:#ffc400
+    }
+  }
+  .order_list_top {
+    padding-bottom: 26rpx;
+    border-bottom: 1px solid #efefef
+  }
+  .list {
+    background: #fff;
+    padding: 30rpx;
+    margin-top: 15rpx;
+  }
+  .order_list_fdate{
+    padding-bottom: 26rpx;
+    border-bottom: 1px solid #efefef;
+    font-size:28rpx;
+    color:#999;  	
+  }
+
+</style>
+<!-- 外卖订单列表item -->
+<template>
+	<view class="order_item">
+		<!-- <view wx:for="{{orderList}}" wx:for-item="item" wx:key="index"> -->
+		<repeat for="{{orderList}}" key="index" index="index" item="item">
+			<view class="list">
+				<view class="item_content" @tap="navigatorOrderDetail" data-index="{{index}}">
+					<view class="order_list_top">
+						<text class="type" wx:if="{{item.fType==0}}">{{item.fOrderNo}}：堂吃</text>
+						<text class="type" wx:if="{{item.fType==1}}">{{item.fOrderNo}}：外卖</text>
+						<text class="type" wx:if="{{item.fType==2}}">{{item.fOrderNo}}：自取</text>
+						<text class="status" wx:if="{{item.fStatus==0}}">待支付</text>
+						<text class="status" wx:if="{{item.fStatus==1}}">已付款，待确认</text>
+						<text class="status" wx:if="{{item.fStatus==4}}">已完成</text>
+						<text class="status" wx:if="{{item.fStatus==5}}">已取消</text>					
+					</view>
+					<view class="order_list_fdate">
+						<text>时间：{{item.fDate}}</text>
+					</view>
+					<view class="order_list_content">
+						<repeat for="{{item.goodsData}}">
+							<view class="goods_list" wx:key="index">
+								<text class="goods_name">{{item.name}}</text>
+								<text class="goods_num">x{{item.num}}</text>
+							</view>
+						</repeat>
+						<view class="pro_total">
+							共{{item.fUnionNum}}件商品
+							合计:￥{{item.fAllAmount}}
+							<text wx:if="{{item.fPayType==1}}">(微信支付)</text>
+							<text wx:if="{{item.fPayType==0}}">(现金支付)</text>
+						</view>
+					</view>
+					<!-- 用户端 type==1 -->
+					<view class="order_list_footer" wx:if="{{type==1}}">
+						<view class="option_btn" data-item="{{item}}" data-index="{{index}}" id="btn_pay" wx:if="{{item.fStatus==0}}" @tap.stop="payMoney">
+							立即支付
+						</view>
+						<view class="option_btn" id="btn_cancel" data-status="5" data-index="{{index}}" @tap.stop="updateOrderStatus" wx:if="{{item.fStatus==0||item.fStatus==1||item.fStatus==2}}">
+							取消订单
+						</view>						
+						<view class="option_btn" id="btn_comfirm" data-status="4" data-index="{{index}}" @tap.stop="updateOrderStatus" wx:if="{{item.fStatus==3}}">
+							确认收货
+						</view>						
+					</view>
+					<!-- 商户端 type==0 -->
+					<view class="order_list_footer" wx:if="{{type==0}}">
+						<view class="option_btn" id="btn_pay" wx:if="{{item.fStatus==1}}" data-item="{{item}}" data-status="2" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							确认订单
+						</view>
+						<view class="option_btn" id="btn_pay" wx:if="{{item.fStatus==1}}" data-item="{{item}}" data-status="5" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							拒绝订单
+						</view>						
+						<view class="option_btn" id="btn_cancel" wx:if="{{item.fStatus==2}}" data-item="{{item}}" data-status="4" data-index="{{index}}" @tap.stop="updateOrderStatus">
+							取餐
+						</view>							
+					</view>	
+					<view class="order_list_footer" wx:if="{{type==0}}">
+						<view class="print_btn" data-item="{{item}}" data-index="{{index}}" @tap.stop="printOrderMsg">
+							打印单据
+						</view>							
+					</view>				
+				</view>
+			</view>			
+		</repeat>
+		<!-- </view> -->
+	</view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import tip from '@/utils/tip'
+import api from '@/api/api'
+import {
+	ORDER_DETAIL,
+	TOKEN,
+	APPID,
+	SHOPID,
+	OPENID,
+	MEMNUM,
+	CUSTID,
+	TEMP_ID
+} from '@/utils/constant'
+export default class getFoodOrderItem extends wepy.component{
+	props = {
+		orderList:{
+			default:[{
+				style:0
+			},{
+				style:0
+			}],
+			type:Object
+		},
+		type:{
+
+		}
+	}
+
+	data = {
+		url:'',
+		token:'',
+		pre_pay_id:'',
+
+	}
+
+		async getFormId(openId,params){
+			const json = await api.getFormId({
+				query:{
+					fOpenId:openId
+				}
+			})
+			console.log("getFormId===",json)
+			if(json.data.code==0){
+				let formId = json.data.data.formId
+				let appId = wepy.getStorageSync(APPID)||{}
+				this.sendModelMsg(appId,openId,formId,params)
+			}
+		}
+
+		async onSaveFormId(openId){
+			const json = await api.addFormId({
+				query:{
+					token:this.token,
+					fOpenId:openId,
+					fFormId:this.pre_pay_id
+				},
+				method:'POST'
+			})
+			console.log("onSaveFormId===",json)
+		}
+
+		async sendModelMsg(appId,openId,formId,params){ 
+			let templateId = wepy.getStorageSync(TEMP_ID) 
+			const json = await api.sendModelMsg({
+				query:{
+					token:this.token,
+					fAppId:appId,
+					data:{
+						touser:openId,
+						template_id:templateId,
+						form_id:formId,
+						page:'pages/home',
+						data:{
+							keyword1:{
+								value:params.orderNo
+							},
+							keyword2:{
+								value:'订单状态变动提醒'
+							},
+							keyword3:{
+								value:params.status
+							},
+							keyword4:{
+								value:params.date
+							},
+							keyword5:{
+								value:'无'
+							},
+							keyword6:{
+								value:params.note
+							},
+						}
+					}
+				},
+				method:'POST'
+			})
+			console.log("sendModelMsg===",json)
+		}
+
+	async printOrderMsg_S(orderNo){
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)
+		const json = await api.printOrderMsg({
+			query:{
+				token:token,
+				fShopId:shopId,
+				fOrderNo:orderNo
+			}
+		})
+		console.log("printOrderMsg===",json)
+		if(json.data.code == 0){
+			// tip.toast('打印成功')
+		}else{
+			tip.toast('打印失败，请稍后重试')
+		}
+	}
+
+	async onInsertIntegral(num){
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)	
+		let custId = wepy.getStorageSync(CUSTID)		
+		const json = await api.insertIntegral({
+			query:{
+				token:token,
+				fShopId:shopId,
+				fCustId:custId,
+				fIntNum:num.toFixed(0)
+			},
+			method:'POST'
+		})
+		console.log('onInsertIntegral===',json)
+	}
+
+				// 微信支付接口
+		onWxPay(params,orderNo,fId,allPrice,index,openId){
+			let that = this
+			this.pre_pay_id = params.package.split('=')[1]
+			wx.requestPayment({
+				'appId':params.appId,
+				'timeStamp':params.timeStamp,
+				'nonceStr':params.nonceStr,
+				'package':params.package,
+				'signType':params.signType, // HMAC-SHA256和MD5
+				'paySign':params.sign,
+				'success':function(res){
+					// 支付调用成功
+					console.log(res)
+				},
+				'fail':function(res){
+					// 支付调用失败
+					console.log(res)
+				},
+				'complete':function(res){
+					// 支付调用结束（成功或失败都会执行）
+					console.log(res)
+					if(res.errMsg == 'requestPayment:ok'){
+						that.onSaveFormId(openId)
+						tip.toast('支付成功')
+						that.orderList[index].fStatus = 1
+						that.printOrderMsg_S(orderNo)
+						//计算积分
+						let memNum = wepy.getStorageSync(MEMNUM)||null
+						if(memNum!=null && memNum!=undefined && memNum!=0){
+							let num = allPrice*parseFloat(memNum) 
+							console.log('计算之后的积分===',memNum,num)
+							that.onInsertIntegral(parseFloat(num))
+						}
+					}else{
+						tip.toast('支付失败')
+					}
+					that.$apply()
+				}
+			})
+		}
+
+	methods = {
+	async printOrderMsg(e){
+		let item = e.currentTarget.dataset.item;
+		let index = e.currentTarget.dataset.index;
+		let token = wepy.getStorageSync(TOKEN)
+		let shopId = wepy.getStorageSync(SHOPID)
+		let orderNo = item.fOrderNo
+		const json = await api.printOrderMsg({
+			query:{
+				token:this.token,
+				fShopId:shopId,
+				fOrderNo:orderNo
+			}
+		})
+		console.log("printOrderMsg===",json)
+		if(json.data.code == 0){
+			tip.toast('打印成功')
+		}else{
+			tip.toast('打印失败，请稍后重试')
+		}
+	},
+
+		//调起支付接口，支付成功订单状态变为已完成
+		async payMoney(e){
+			let item = e.currentTarget.dataset.item
+			let shopId = wepy.getStorageSync(SHOPID)
+			let openId = wepy.getStorageSync(OPENID)
+			let token = wepy.getStorageSync(TOKEN)
+			let fCouponId = item.fCouponId
+			let index = e.currentTarget.dataset.index
+			const json = await api.afterPay({
+				query:{
+					token:token,
+					fShopId:shopId,
+					fIP:'192.168.1.12',
+					fOrderNo:item.fOrderNo,
+					fTotalFee:item.fAllAmount*100,
+					fOpenId:openId
+				},
+				method:'POST'
+			})
+			console.log('afterPay===',json)
+			if(json.data.code == 0){
+				this.onWxPay(json.data.data,item.fOrderNo,fCouponId,item.fAllAmount,index,openId)
+			}else{
+
+			}
+		},
+		refreshList(val){
+			if(val == undefined)return;
+			this.orderList = val;
+			console.log("val....",this.orderList);
+			this.$apply();
+		},
+
+		navigatorOrderDetail(e){
+			let index = e.currentTarget.dataset.index;
+			let that = this;
+			wepy.setStorageSync(ORDER_DETAIL,that.orderList[index]);
+			console.log("navigatorOrderListItem==",that.orderList[index]);
+			if(this.type==1){
+    			wx.navigateTo({
+    				url: '/pages/orderDetail'
+    			});	
+			}else{
+    			wx.navigateTo({
+    				url: '/packageA/pages/adminOrderDetail'
+    			});	
+			}			
+		},
+
+		async updateOrderStatus(e){
+			let that = this;
+			let item = e.currentTarget.dataset.item;
+			let optstatus = e.currentTarget.dataset.status;
+			let index = e.currentTarget.dataset.index;
+			const json = await api.updateOrderStatus({
+				query:{
+					token:that.token,
+					fOrderId:item.fOrderId,
+					fStatus:optstatus
+				},
+				method:'POST'
+			});
+			console.log("updateOrderStatus===",json);
+			if(json.data.code==0){
+				this.orderList[index].fStatus = optstatus;
+				this.$apply();
+				let params = {}
+				if(optstatus == 2){
+					params.status = '商家已确认订单'
+				}else if(optstatus == 5){
+					params.status = '商家拒绝了您订单'
+				}else if(optstatus == 4){
+					params.status = '已取餐'
+				}else{
+					return
+				}
+				params.orderNo = item.fOrderNo
+				params.date = item.fDate
+				params.note = item.fNote
+				this.getFormId(item.fOpenId,params)			
+			}
+		},
+	}
+
+
+
+	onLoad(){
+		this.token = wepy.getStorageSync(TOKEN)||{};
+	}
+}
+</script>
+

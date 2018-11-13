@@ -1,0 +1,119 @@
+<template>
+	<view class="top-container">
+		<swiper indicator-dots="true" autoplay="true" interval="5000" duration="3000">
+  		<block wx:for="{{imgUrls}}">
+    		<swiper-item>
+     			<image mode="aspectFit" src="{{item}}" style="width:100%;height:50vw"/>
+    		</swiper-item>
+  		</block>
+		</swiper>
+	</view>
+	<view style="width:100%;text-align:center;font-size:30rpx;color:#999;margin-top:30rpx;margin-bottom:30rpx;">— 小程序搭建咨询 —</view>
+	<view class="middle-container">
+		<view style="width:100%;height:80rpx;line-height:80rpx;">	
+			<i class="iconfont icon-callPhone" style="float:left;color:#03a9f4;font-size:70rpx;margin-left:50rpx;"></i>
+			<text class="qcode-text">电 话： 158-1507-5333</text>
+			<text class="option-text" @tap="onCallPhone">咨询</text>
+		</view>
+		<!-- <image class="qcode-img" src="{{qcode}}" @tap="scanQCode"></image> -->
+		<view style="width:100%;margin-top:50rpx;height:80rpx;line-height:80rpx;">
+			<i class="iconfont icon-wechat" style="float:left;color:#42bd41;font-size:70rpx;margin-left:50rpx;"></i>
+			<text class="qcode-text">微 信： ST0214XG</text>
+			<text class="option-text" @tap="onSetCopy">复制</text>
+		</view>
+	</view>
+	<view class="bottom-container">
+		<text style="color:#D6DDE6;font-size:30rpx;">— PowerBy 智灵技术 —</text>
+	</view>
+</template>
+
+<script>
+	import wepy from 'wepy' 
+	import { SHOPID,CUSTID,TOKEN } from '@/utils/constant'
+	import api from '@/api/api'
+	import util from '@/utils/util'
+	import tip from '@/utils/tip'
+	export default class Consultt extends wepy.page{
+		config = {
+			navigationBarTitleText:'小程序搭建咨询'
+		}
+
+		data = {
+			imgUrls:[
+				'http://opmzmyurr.bkt.clouddn.com/cousult-banner1.PNG',
+				'http://opmzmyurr.bkt.clouddn.com/consult-banner2.PNG',
+				'http://opmzmyurr.bkt.clouddn.com/consult-banner3.PNG'
+			],
+			qcode:'http://opmzmyurr.bkt.clouddn.com/wen-qcode.png',
+		}
+
+		onLoad(){
+			
+		}
+
+		onShow(){
+		}
+
+		methods = {
+			onSetCopy(){
+				wx.setClipboardData({
+					data:'ST0214XG',
+					success(e){
+						// tip.toast('复制成功，快去添加好友吧',3000)
+					},
+				})
+			},
+			onCallPhone(){
+				wx.makePhoneCall({
+					phoneNumber:'15815075333',
+				})
+			},
+			scanQCode(){
+				const urls = ['http://opmzmyurr.bkt.clouddn.com/%E6%96%87%E5%90%8D%E7%89%87%E6%AD%A3%E9%9D%A2%E5%8F%B3%E8%BE%B9.png']
+				wx.previewImage({
+					urls
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="less">
+page{
+	background:#f8f9fc;
+}
+.middle-container{
+	width:90%;
+	height:300rpx;
+	margin:30rpx auto;
+	background:#ffffff;
+	box-shadow:1px 1px 1px 1px #DCE6EE;
+	border-radius:8rpx;
+	padding-top:50rpx;
+}
+.bottom-container{
+	position:fixed;
+	bottom:40rpx;
+	width:100%;
+	height:80rpx;
+	text-align:center;
+	margin-top:50rpx;
+}
+.qcode-text{
+	font-size:36rpx;
+	margin-left:30rpx;
+	color:#333;
+}
+.option-text{
+	float:right;
+	font-size:30rpx;
+	color:#5677fc;
+	margin-right:30rpx;
+}
+.qcode-img{
+	width:50%;
+	height:50%;
+	margin:30rpx auto;
+	margin-top:40rpx;
+}
+</style>

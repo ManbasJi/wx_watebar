@@ -122,12 +122,67 @@
 			text-align:center;
 		}
 	}
+	.modal-mask {
+		width:100%;
+		height:100%;
+		position:fixed;
+		top: 0;
+		left:0;
+		background: #666;
+		opacity: 0.5;
+		overflow: hidden;
+		z-index: 90000;
+	}
+	.coupon-list{
+		width: 540rpx;
+		height:450rpx;
+		padding:25rpx 0;
+		overflow:hidden;
+		position:absolute;
+		top:40%;
+		left:0;
+		z-index:99999;
+		background:#ffffff;
+		margin: -180rpx 105rpx;
+		border-radius:8rpx;
+	}
+	.coupon-item{
+		width:500rpx;
+		height:100rpx;
+		padding:30rpx 20rpx;
+	}
+
+	.authorize-icon{
+	width: 128rpx;
+	height: 128rpx;
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 10rpx;
+}
+.auth-item{
+	font-size: 32rpx;
+	padding: 5rpx 0;
+	text-align: center;
+}
+.btn-authorize{
+	margin: 100rpx 50rpx;
+}
+.bottom-text{
+	width:100%;
+	height:80rpx;
+	text-align:center;
+	margin-top:50rpx;
+	background:#f2f2f2;
+}
 </style>
 <template>
 	<view class="container">
 		<view class="top_box">
-			<image class="user_logo" id="user_logo" src="{{user_img}}"></image>
-			<view style="float:left;width:auto;height:160rpx;margin-top:8rpx;margin-left:20rpx;">
+			<image wx:if="{{isLogin}}" class="user_logo" id="user_logo" src="{{user_img}}"></image>
+			<view wx:if="{{!isLogin}}" style="float:left;width:auto;height:160rpx;margin-top:8rpx;margin-left:20rpx;">
+				<text style="font-size:28rpx;color:#fff;border-radius:10rpx;border:5rpx solid #fff;padding:3rpx;padding-left:10rpx;padding-right:10rpx;margin-top:50rpx;float:left;margin-left:50rpx;" @tap="onLogin">未登录</text>
+			</view>
+			<view wx:if="{{isLogin}}" style="float:left;width:auto;height:160rpx;margin-top:8rpx;margin-left:20rpx;">
 				<view id="username" style="color:#333;margin-top:20rpx;font-weight:600;font-size:38rpx;">{{user_name}}</view>
 				<view style="margin-top:15rpx;">
 					<text style="font-size:30rpx;color:#333;font-weight:500;">{{memberName}} |</text>
@@ -187,6 +242,20 @@
 		</repeat>
 		</scroll-view>
 	</view>
+
+
+	<view class="modal-mask" catchtouchmove="preventTouchMove" wx:if="{{isShowGetPmsModal}}" @tap="onTouchPmsMask"></view>
+	<view class="coupon-list" wx:if="{{isShowGetPmsModal}}">
+		<view style="height:420rpx;background:#fff;">
+			<image class="authorize-icon" src="../images/authorize.png"></image>
+			<view class="auth-item">申请获取以下权限：</view>
+			<view class="auth-item">获取你的公开信息（头像、昵称等）</view>
+			<view class="btn-authorize">
+				<button style="height:80rpx;line-height:80rpx;font-size:36rpx;" open-type="getUserInfo" type="primary" lang="zh_CN" bindgetuserinfo="onGotUserInfo">授权</button>
+			</view>
+		</view>
+	</view>
+
 </template>
 <script>
 import wepy from 'wepy';
@@ -197,7 +266,11 @@ import {
 	BE_SHOPADMIN,
 	SHOPID,
 	CUSTID,
-	DISCOUNT
+	DISCOUNT,
+	SYSTEM_INFO,
+	TOKEN,
+	OPENID,
+	APPID
 } from '@/utils/constant'
 export default class PersonalCenter extends wepy.page{
 	config = {
@@ -211,6 +284,7 @@ export default class PersonalCenter extends wepy.page{
 	}
 
 	data = {
+		isLogin:true,
 		shopId:null,
 		custId:'',
 		user_img:'',
@@ -223,13 +297,27 @@ export default class PersonalCenter extends wepy.page{
 		memberRules:[],
 		isMember:false,
 		depos:0,
+		isShowGetPmsModal:false,
+		addressX:0,
+		addressY:0,
 	}
 
 	onLoad(){
+		let that = this
 		//加载用户信息
+		wx.getLocation({
+			success:function(res){
+				that.addressX = res.longitude
+				that.addressY = res.latitude
+			}
+		})
+		this.shopId = this.$parent.globalData.shopId;
+		this.custId = wepy.getStorageSync(CUSTID)||null;
+		if(this.custId == null){
+			this.isLogin = false
+			return
+		}
 		let userinfo = wepy.getStorageSync(USER_INFO);
-		this.shopId = wepy.getStorageSync(SHOPID);
-		this.custId = wepy.getStorageSync(CUSTID);
 		console.log('用户资料',userinfo)
 		this.user_img = userinfo.avatarUrl;
 		this.user_name = userinfo.nickName;
@@ -306,7 +394,117 @@ export default class PersonalCenter extends wepy.page{
 		this.$apply()
 	}
 
+	async onGotUserInfo(e){
+		let that = this;
+		if(e.detail.errMsg == 'getUserInfo:ok'){
+			let res = await wepy.login();
+			console.log("用户登录信息:");
+			console.log(res);
+			// tip.toast("用户登录信息")
+			if(res.code){
+				console.log(e.detail);
+				// 存储用户信息到本地
+				wepy.setStorageSync(USER_INFO,e.detail.userInfo);
+				that.user_name = e.detail.userInfo.nickName
+				that.user_img = e.detail.userInfo.avatarUrl
+				let systemInfo = wepy.getSystemInfoSync();
+				// 存储系统信息到本地
+				wepy.setStorageSync(SYSTEM_INFO,systemInfo);
+				// wepy.switchTab({
+				// 	url:'/pages/home'
+				// })
+				// tip.toast("即将进入isToken")
+				that.isToken();
+			}
+		}
+	}
+
+	async isToken(){
+		let that = this;
+		var token = wepy.getStorageSync(TOKEN);
+		if(token==undefined || token==''){
+			//token为空，重新调用获取token接口
+			that.wxlogin();
+		}else{
+			//token有值存在
+			let json = await api.checkToken({
+				query:{
+					token:token
+				},
+			})
+			console.log("执行token接口");
+			console.log(json);	
+			if(json.data.code == 0){
+				this.isShowGetPmsModal = false
+				this.onLoadSuccess()
+			}else{
+				//token过期，重新请求token
+				that.wxlogin();
+			}
+		}
+	}
+
+	async wxlogin(){
+		let reslogin = await wepy.login();
+		console.log("wxcode:");
+		console.log(reslogin.code);
+		// tip.toast("进入了wxlogin")
+		if(reslogin.errMsg == "login:ok"){
+			// tip.toast("开始调用wxlogin")
+			const json = await api.sendWxCode({
+				query:{
+					code:reslogin.code,
+					fAppId:this.$parent.globalData.appId,
+					fPhone:null,
+					fType:1,
+					fAddressX:this.addressX,
+					fAddressY:this.addressY,
+					fNickName:this.user_name
+				},
+				method:'POST'
+			})
+			console.log("发送wxcode请求......");
+			console.log(json);
+			if(json.data.code == 0){
+					//保存token到本地
+					wepy.setStorageSync(TOKEN,json.data.token);//
+					wepy.setStorageSync(CUSTID,json.data.data.fId);
+					wepy.setStorageSync(OPENID,json.data.data.openId);
+					wepy.setStorageSync(SHOPID,json.data.data.fShopId);
+					wepy.setStorageSync(APPID,this.AppId)
+					this.custId = json.data.data.fId
+					console.log(json.data.data.fShopId[0])
+					//用户有注册
+					this.isShowGetPmsModal = false
+					this.onLoadSuccess()
+				}else{
+					//重新调用登录功能
+					let res = await wepy.showModal({
+						title: '获取token失败',
+						cotent: '登录失败'
+					})
+					if(res.confirm){
+						this.wxlogin() // 重新调用登录接口
+					}
+				}	
+			}
+		}
+
+		onLoadSuccess(){
+			this.isLogin = true
+			this.onGetMemberDetail()
+			this.onGetMemberRules()
+			this.onGetDepos()
+		}
+
+		onTouchPmsMask(){
+			this.isShowGetPmsModal = false
+		}
+
 	methods = {
+		onLogin(){
+			this.isShowGetPmsModal = true
+		},
 		onTouchMask(){
 			this.isShowModal = false
 		},
@@ -319,16 +517,28 @@ export default class PersonalCenter extends wepy.page{
 			this.isShowModal = true
 		},
 		onCoupons(){
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			wepy.navigateTo({
 				url:'/packageA/pages/custcoupons'
 			})
 		},
 		myAddress(){
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			wepy.navigateTo({
 				url:'/pages/address'
 			})
 		},
 		goAdmin(){
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			wepy.navigateTo({
 				url:'/packageA/pages/adminHome'
 			})			
@@ -339,11 +549,19 @@ export default class PersonalCenter extends wepy.page{
 			})
 		},
 		goAdminLogin(){
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			wepy.navigateTo({
 				url:'/packageA/pages/adminLogin'
 			})		
 		},
 		goOutLogin(){
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			let that = this
 			wepy.setStorageSync(BE_SHOPADMIN,false)
 			this.isadmin = false
@@ -351,6 +569,10 @@ export default class PersonalCenter extends wepy.page{
 		inDepos(){
 			// tip.toast('暂未提供该服务')
 			// return
+			if(!this.isLogin){
+				this.isShowGetPmsModal = true
+				return
+			}
 			wepy.navigateTo({
 				url:'/packageA/pages/indepos?depos='+this.depos
 			})	

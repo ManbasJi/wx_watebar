@@ -15,11 +15,8 @@ export default class extends wepy.app {
       'pages/orderList',
       'pages/personalCenter',
       'pages/address',
-      'pages/foodMenuParce',
-      'pages/foodMenuOrder',
       'pages/commitOrder',
       'pages/orderDetail',
-      'pages/subscribe',
     ],
     subPackages:[
       {
@@ -77,7 +74,8 @@ export default class extends wepy.app {
   globalData = {
     appId: 'wx27b5d7e06dbe2064',
     hostUrl : '',
-    version : 1.1
+    version : 1.1,
+    shopId: 2
   }
 
   constructor () {

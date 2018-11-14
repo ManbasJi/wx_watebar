@@ -35,6 +35,7 @@
 
 	.bottom_box{
 		height:90rpx;
+		line-height:90rpx;
 		background:#eae6e7;
 		position:fixed;
 		bottom:0rpx;
@@ -43,7 +44,9 @@
 		.pic_shopcart{
 			width:50rpx;
 			height:50rpx;
+			float:left;
 			margin-top:15rpx;
+			margin-left:20rpx;
 		}
 		.pic_shopcart_bg{
 			float:left;
@@ -78,8 +81,8 @@
 			top:15rpx;
 		}
 		.distributionPrice{
-			font-size:26rpx;
-			color:#ccc;
+			font-size:24rpx;
+			color:#999;
 			position:relative;
 			left:40rpx;
 			top:15rpx;
@@ -414,8 +417,10 @@
 	<!-- 顶部 -->
 	<view class="top_box">
 		<text style="font-size:32rpx;font-weight:bold;color:#000;">龙湖店</text>
-		<text style="font-size:24rpx;color:#666;border-radius:8rpx;border:1rpx solid #666;padding:3rpx;margin-left:20rpx;">可外送</text><view></view>
-		<text style="font-size:22rpx;color:#999;">联系电话:0754-88888888</text>
+		<text style="font-size:24rpx;color:#ffc400;border-radius:8rpx;border:1rpx solid #ffc400;padding:3rpx;margin-left:20rpx;">可外送</text>
+		<text style="font-size:22rpx;color:#999;margin-left:20rpx;">起送价：{{shopInfo.fStartPrice}}元</text>
+		<view></view>
+		<text style="font-size:22rpx;color:#999;margin-right:20rpx;">联系电话:0754-88888888</text>
 		<text style="font-size:22rpx;color:#999;">龙湖区黄河路19号智汇时代雅苑4栋1601号</text>
 	</view>
 			<swiper indicator-dots="true" autoplay="true" interval="3000" duration="3000" style="padding:20rpx;">
@@ -426,16 +431,16 @@
 			  </block>	
 			</swiper>
 	<!-- 中间 -->
-	<view class="content_box" style="height:{{windowHeight-95}}px">
+	<view class="content_box" style="height:{{scrollMenuHeight}}px">
 		<!-- 左侧菜单 -->
-		<scroll-view class="category_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
+		<scroll-view class="category_box" scroll-y scroll-with-animation="true" style="height:{{scrollMenuHeight}}px">
 			<view class="name text_overflow {{item.active?'active':''}}" wx:for="{{categoryList}}" wx:key="item" @tap="onChangeCategory" data-id="{{item.fListId}}" data-index="{{index}}">
 				<image src="{{item.url}}" style="width:40rpx;height:40rpx;margin-right:10rpx;"></image>
 				<text>{{item.fListName}}</text>
 			</view>
 		</scroll-view>
 		<!-- 右侧菜单 -->
-		<scroll-view class="food_box" scroll-y scroll-with-animation="true" style="height:{{windowHeight-95}}px">
+		<scroll-view class="food_box" scroll-y scroll-with-animation="true" style="height:{{scrollMenuHeight}}px">
 			<!-- <view class="category_name">{{categoryName}}</view> -->
 			<view class="food_list">
 				<view class="food_item" wx:for="{{foodMsgList}}" wx:for-item="item" wx:key="index" data-index="{{index}}" @tap="showM">
@@ -463,16 +468,16 @@
 		</view>
 	</view>
 	<!-- 底部 -->
-	<view class="bottom_box">
+	<view class="bottom_box" wx:if="{{isShopCart}}">
 		<view class="{{allPrice==0||allPrice==undefined?'pic_shopcart_bg_null':'pic_shopcart_bg'}}">
 			<image class="pic_shopcart" src="../images/icon_shop_cart.png"></image>
-			<text style="font-size:26rpx;margin-left:10rpx;">购物袋</text>
+			<text style="font-size:26rpx;margin-left:0rpx;">购物袋</text>
 		</view>
 		<view class="shopcart_num_redpoint" wx:if="{{allPrice==0||allPrice==undefined?false:true}}">{{allProNum}}</view>
 		<text class="all_price">{{allPrice==0||allPrice==undefined?'':'￥'+allPrice}}</text>
-<!-- 		<text class="distributionPrice">另需配送费{{shopInfo.fDistributionPrice}}元</text> -->
+		<text class="distributionPrice">另需配送费{{shopInfo.fDistributionPrice}}元</text>
 <!-- 		<text class="btn_balance_cash" @tap="onBalance" wx:if="{{type!=3}}" data-paytype="1">现金支付</text> -->
-		<text class="btn_balance_wx" @tap="onBalance" data-paytype="0">结算</text>
+		<text class="btn_balance_wx" @tap="onBalance" data-paytype="0">结 算</text>
 	</view>
 	<!-- 商品信息弹窗 -->
 	<foodMsgModal :modal.sync="modalItem" @msgModal.user="onMsgModal" wx:if="{{showMsgModal}}"></foodMsgModal>
@@ -510,15 +515,16 @@ export default class foodMenuParce extends wepy.page{
 	}
 
 	data = {
-		isShopCart:true,
+		scrollMenuHeight:0,
+		isShopCart:false,
 		windowHeight:0,
-		shopId:'',
+		shopId:2,
 		custId:0,
 		tableNo:null,
 		bannerList:[
-			'http://image.leadnexus.net/huangjing1.PNG',
-			'http://image.leadnexus.net/huangjing2.PNG',
-			'http://image.leadnexus.net/huangjing3.PNG',
+			'https://image.leadnexus.net/jg_huangjing1.PNG',
+			'https://image.leadnexus.net/jg_huangjing2.PNG',
+			'https://image.leadnexus.net/jg_huangjing3.PNG',
 		],
 
 		iconUrl:[
@@ -556,7 +562,6 @@ export default class foodMenuParce extends wepy.page{
 	}
 
 	onLoad(opts){
-		this.shopId = wepy.getStorageSync(SHOPID)||{};
 		this.shopCart = wepy.getStorageSync(SHOP_CART)||[];
 		this.custId = wepy.getStorageSync(CUSTID)||null
 		this.tableNo = opts.tableNo
@@ -576,9 +581,14 @@ export default class foodMenuParce extends wepy.page{
         		wepy.setStorageSync(SYSTEM_INFO, systemInfo);						
 			}
 			this.windowHeight = systemInfo.windowHeight;
+			this.scrollMenuHeight = this.windowHeight - 195
 			console.log("windowHeight=====");
 			console.log(this.windowHeight);	
 			this.getShopMsg();		
+	}
+
+	onShow(){
+		this.custId = wepy.getStorageSync(CUSTID)||null
 	}
 
 	onUnload(){
@@ -670,7 +680,7 @@ export default class foodMenuParce extends wepy.page{
 		const json = await api.getShopInfo({
 			query:{
 				fShopId:this.shopId,
-				fCustId:this.custId
+				fCustId:0
 			}
 		});
 		console.log("getShopMsg===",json);
@@ -790,6 +800,13 @@ export default class foodMenuParce extends wepy.page{
 		}
 		this.allPrice = allPrice;
 		this.allProNum = num;
+		if(this.allProNum > 0){
+			this.isShopCart = true
+			this.scrollMenuHeight = this.windowHeight - 240
+		}else{
+			this.isShopCart = false
+			this.scrollMenuHeight = this.windowHeight - 195
+		}
 		console.log("countShopCart===",this.allPrice,this.allProNum,this.shopCart);
 	}
 
@@ -1010,11 +1027,19 @@ export default class foodMenuParce extends wepy.page{
 			
 		},
 		onBalance(e){
+			if(this.custId == null){
+				tip.toast('您还没有登录，请先登录')
+				return
+			}
 			let payType = e.currentTarget.dataset.paytype;
 			console.log("支付类型",payType)
 			if(this.shopCart.length == 0){
 				tip.toast("购物车不能为空！");
 				return;
+			}
+			if(this.allPrice != 0.01 && this.allPrice < this.shopInfo.fStartPrice){
+				tip.toast("所选商品不够起送价");
+				return;				
 			}
 			wepy.setStorageSync(SHOP_CART,this.shopCart);
 			wepy.setStorageSync(ADDRESS_ID,'');//初始化 addressId,为下个页面所用
